@@ -1,29 +1,26 @@
 """
-=================
-subplot2grid demo
-=================
+===============
+Demo Gridspec01
+===============
 
-This example demonstrates the use of `plt.subplot2grid` to generate subplots.
-Using `GridSpec`, as demonstrated in :doc:`/gallery/userdemo/demo_gridspec03`
-is generally preferred.
 """
-
 import matplotlib.pyplot as plt
 
 
-def annotate_axes(fig):
+def make_ticklabels_invisible(fig):
     for i, ax in enumerate(fig.axes):
         ax.text(0.5, 0.5, "ax%d" % (i+1), va="center", ha="center")
         ax.tick_params(labelbottom=False, labelleft=False)
 
 
-fig = plt.figure()
+fig = plt.figure(0)
 ax1 = plt.subplot2grid((3, 3), (0, 0), colspan=3)
 ax2 = plt.subplot2grid((3, 3), (1, 0), colspan=2)
 ax3 = plt.subplot2grid((3, 3), (1, 2), rowspan=2)
 ax4 = plt.subplot2grid((3, 3), (2, 0))
 ax5 = plt.subplot2grid((3, 3), (2, 1))
 
-annotate_axes(fig)
+fig.suptitle("subplot2grid")
+make_ticklabels_invisible(fig)
 
 plt.show()

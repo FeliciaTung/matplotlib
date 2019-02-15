@@ -42,9 +42,11 @@ def test_rotation_mode(fig, mode, subplot_location):
             i += 1
 
 
-if __name__ == "__main__":
+if 1:
     import matplotlib.pyplot as plt
-    fig = plt.figure(figsize=(5.5, 4))
+    fig = plt.figure(1, figsize=(5.5, 4))
+    fig.clf()
+
     test_rotation_mode(fig, "default", 121)
     test_rotation_mode(fig, "anchor", 122)
     plt.show()

@@ -1,3 +1,6 @@
+from __future__ import absolute_import, division, print_function
+
+import six
 import warnings
 
 import numpy as np
@@ -19,7 +22,8 @@ def example_plot(ax, fontsize=12):
 @image_comparison(baseline_images=['tight_layout1'])
 def test_tight_layout1():
     'Test tight_layout for a single subplot'
-    fig, ax = plt.subplots()
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
     example_plot(ax, fontsize=24)
     plt.tight_layout()
 
@@ -132,8 +136,9 @@ def test_tight_layout6():
 @image_comparison(baseline_images=['tight_layout7'])
 def test_tight_layout7():
     # tight layout with left and right titles
+    fig = plt.figure()
     fontsize = 24
-    fig, ax = plt.subplots()
+    ax = fig.add_subplot(111)
     ax.plot([1, 2])
     ax.locator_params(nbins=3)
     ax.set_xlabel('x-label', fontsize=fontsize)
@@ -154,7 +159,7 @@ def test_tight_layout8():
 
 @image_comparison(baseline_images=['tight_layout9'])
 def test_tight_layout9():
-    # Test tight_layout for non-visible subplots
+    # Test tight_layout for non-visible suplots
     # GH 8244
     f, axarr = plt.subplots(2, 2)
     axarr[1][1].set_visible(False)
@@ -208,7 +213,7 @@ def add_offsetboxes(ax, size=10, margin=.1, color='black'):
         da.add_artist(background)
 
         anchored_box = AnchoredOffsetbox(
-            loc='center',
+            loc=10,
             child=da,
             pad=0.,
             frameon=False,
@@ -267,68 +272,3 @@ def test_empty_layout():
 
     fig = plt.gcf()
     fig.tight_layout()
-
-
-def test_verybig_decorators_horizontal():
-    "Test that warning emitted when xlabel too big"
-    fig, ax = plt.subplots(figsize=(3, 2))
-    ax.set_xlabel('a' * 100)
-    with warnings.catch_warnings(record=True) as w:
-        fig.tight_layout()
-        assert len(w) == 1
-
-
-def test_verybig_decorators_vertical():
-    "Test that warning emitted when xlabel too big"
-    fig, ax = plt.subplots(figsize=(3, 2))
-    ax.set_ylabel('a' * 100)
-    with warnings.catch_warnings(record=True) as w:
-        fig.tight_layout()
-        assert len(w) == 1
-
-
-def test_big_decorators_horizontal():
-    "Test that warning emitted when xlabel too big"
-    fig, axs = plt.subplots(1, 2, figsize=(3, 2))
-    axs[0].set_xlabel('a' * 30)
-    axs[1].set_xlabel('b' * 30)
-    with warnings.catch_warnings(record=True) as w:
-        fig.tight_layout()
-        assert len(w) == 1
-
-
-def test_big_decorators_vertical():
-    "Test that warning emitted when xlabel too big"
-    fig, axs = plt.subplots(2, 1, figsize=(3, 2))
-    axs[0].set_ylabel('a' * 20)
-    axs[1].set_ylabel('b' * 20)
-    with warnings.catch_warnings(record=True) as w:
-        fig.tight_layout()
-        assert len(w) == 1
-
-
-def test_badsubplotgrid():
-    # test that we get warning for mismatched subplot grids rather
-    # than an error
-    ax1 = plt.subplot2grid((4, 5), (0, 0))
-    # this is the bad entry:
-    ax5 = plt.subplot2grid((5, 5), (0, 3), colspan=3, rowspan=5)
-    with warnings.catch_warnings(record=True) as w:
-        plt.tight_layout()
-        assert len(w) == 1
-
-
-def test_collapsed():
-    # test that if a call to tight_layout will collapses the axes that
-    # it does not get applied:
-    fig, ax = plt.subplots(tight_layout=True)
-    ax.set_xlim([0, 1])
-    ax.set_ylim([0, 1])
-
-    ax.annotate('BIG LONG STRING', xy=(1.25, 2), xytext=(10.5, 1.75),)
-    p1 = ax.get_position()
-    with warnings.catch_warnings(record=True) as w:
-        plt.tight_layout()
-        p2 = ax.get_position()
-        assert p1.width == p2.width
-        assert len(w) == 1

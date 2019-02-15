@@ -1,6 +1,10 @@
-********************
-``matplotlib.image``
-********************
+*****
+image
+*****
+
+
+:mod:`matplotlib.image`
+=======================
 
 .. automodule:: matplotlib.image
    :members:

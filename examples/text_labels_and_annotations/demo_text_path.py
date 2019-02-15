@@ -3,9 +3,6 @@
 Demo Text Path
 ==============
 
-Use a text as `Path`. The tool that allows for such conversion is a
-`~matplotlib.textpath.TextPath`. The resulting path can be employed
-e.g. as a clip path for an image.
 """
 
 import matplotlib.pyplot as plt
@@ -59,17 +56,19 @@ class PathClippedImagePatch(mpatches.PathPatch):
         mpatches.PathPatch.draw(self, renderer)
 
 
-if __name__ == "__main__":
+if 1:
 
     usetex = plt.rcParams["text.usetex"]
 
-    fig = plt.figure()
+    fig = plt.figure(1)
 
     # EXAMPLE 1
 
     ax = plt.subplot(211)
 
-    arr = plt.imread(get_sample_data("grace_hopper.png"))
+    from matplotlib._png import read_png
+    fn = get_sample_data("grace_hopper.png", asfileobj=False)
+    arr = read_png(fn)
 
     text_path = TextPath((0, 0), "!?", size=150)
     p = PathClippedImagePatch(text_path, arr, ec="k",
@@ -82,8 +81,7 @@ if __name__ == "__main__":
     offsetbox.add_artist(p)
 
     # make anchored offset box
-    ao = AnchoredOffsetbox(loc='upper left', child=offsetbox, frameon=True,
-                           borderpad=0.2)
+    ao = AnchoredOffsetbox(loc=2, child=offsetbox, frameon=True, borderpad=0.2)
     ax.add_artist(ao)
 
     # another text
@@ -156,4 +154,5 @@ if __name__ == "__main__":
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
 
+    plt.draw()
     plt.show()

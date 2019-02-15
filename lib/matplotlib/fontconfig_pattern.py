@@ -13,11 +13,16 @@ more information.
 # It probably logically belongs in :file:`font_manager.py`, but placing it
 # there would have created cyclical dependency problems.
 
-from functools import lru_cache
-import re
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
+import six
+
+import re
 from pyparsing import (Literal, ZeroOrMore, Optional, Regex, StringEnd,
                        ParseException, Suppress)
+
+from functools import lru_cache
 
 family_punc = r'\\\-:,'
 family_unescape = re.compile(r'\\([%s])' % family_punc).sub
@@ -26,7 +31,6 @@ family_escape = re.compile(r'([%s])' % family_punc).sub
 value_punc = r'\\=_:,'
 value_unescape = re.compile(r'\\([%s])' % value_punc).sub
 value_escape = re.compile(r'([%s])' % value_punc).sub
-
 
 class FontconfigPatternParser(object):
     """A simple pyparsing-based parser for fontconfig-style patterns.
@@ -175,6 +179,8 @@ def generate_fontconfig_pattern(d):
     pattern string.
     """
     props = []
+    families = ''
+    size = ''
     for key in 'family style variant weight stretch file size'.split():
         val = getattr(d, 'get_' + key)()
         if val is not None and val != []:

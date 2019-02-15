@@ -38,12 +38,12 @@ triang.set_mask(np.hypot(x[triang.triangles].mean(axis=1),
 ###############################################################################
 # pcolor plot.
 
-fig1, ax1 = plt.subplots()
-ax1.set_aspect('equal')
-tcf = ax1.tricontourf(triang, z)
-fig1.colorbar(tcf)
-ax1.tricontour(triang, z, colors='k')
-ax1.set_title('Contour plot of Delaunay triangulation')
+plt.figure()
+plt.gca().set_aspect('equal')
+plt.tricontourf(triang, z)
+plt.colorbar()
+plt.tricontour(triang, z, colors='k')
+plt.title('Contour plot of Delaunay triangulation')
 
 ###############################################################################
 # You can specify your own triangulation rather than perform a Delaunay
@@ -75,7 +75,7 @@ x = np.degrees(xy[:, 0])
 y = np.degrees(xy[:, 1])
 x0 = -5
 y0 = 52
-z = np.exp(-0.01 * ((x - x0) ** 2 + (y - y0) ** 2))
+z = np.exp(-0.01 * ((x - x0) * (x - x0) + (y - y0) * (y - y0)))
 
 triangles = np.asarray([
     [67, 66,  1], [65,  2, 66], [ 1, 66,  2], [64,  2, 65], [63,  3, 64],
@@ -101,27 +101,12 @@ triangles = np.asarray([
 # object if the same triangulation was to be used more than once to save
 # duplicated calculations.
 
-fig2, ax2 = plt.subplots()
-ax2.set_aspect('equal')
-tcf = ax2.tricontourf(x, y, triangles, z)
-fig2.colorbar(tcf)
-ax2.set_title('Contour plot of user-specified triangulation')
-ax2.set_xlabel('Longitude (degrees)')
-ax2.set_ylabel('Latitude (degrees)')
+plt.figure()
+plt.gca().set_aspect('equal')
+plt.tricontourf(x, y, triangles, z)
+plt.colorbar()
+plt.title('Contour plot of user-specified triangulation')
+plt.xlabel('Longitude (degrees)')
+plt.ylabel('Latitude (degrees)')
 
 plt.show()
-
-#############################################################################
-#
-# ------------
-#
-# References
-# """"""""""
-#
-# The use of the following functions, methods and classes is shown
-# in this example:
-
-import matplotlib
-matplotlib.axes.Axes.tricontourf
-matplotlib.pyplot.tricontourf
-matplotlib.tri.Triangulation

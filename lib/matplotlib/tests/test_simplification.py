@@ -1,4 +1,5 @@
-import base64
+from __future__ import absolute_import, division, print_function
+
 import io
 
 import numpy as np
@@ -33,7 +34,7 @@ def test_overflow():
 
     fig, ax = plt.subplots()
     ax.plot(x, y)
-    ax.set_xlim(2, 6)
+    ax.set_xlim(xmin=2, xmax=6)
 
 
 @image_comparison(baseline_images=['clipping_diamond'], remove_text=True)
@@ -43,13 +44,13 @@ def test_diamond():
 
     fig, ax = plt.subplots()
     ax.plot(x, y)
-    ax.set_xlim(-0.6, 0.6)
-    ax.set_ylim(-0.6, 0.6)
+    ax.set_xlim(xmin=-0.6, xmax=0.6)
+    ax.set_ylim(ymin=-0.6, ymax=0.6)
 
 
 def test_noise():
     np.random.seed(0)
-    x = np.random.uniform(size=50000) * 50
+    x = np.random.uniform(size=(50000,)) * 50
 
     fig, ax = plt.subplots()
     p1 = ax.plot(x, solid_joinstyle='round', linewidth=2.0)
@@ -190,7 +191,7 @@ def test_angled_antiparallel(angle, offset):
 def test_sine_plus_noise():
     np.random.seed(0)
     x = (np.sin(np.linspace(0, np.pi * 2.0, 50000)) +
-         np.random.uniform(size=50000) * 0.01)
+         np.random.uniform(size=(50000,)) * 0.01)
 
     fig, ax = plt.subplots()
     p1 = ax.plot(x, solid_joinstyle='round', linewidth=2.0)
@@ -264,7 +265,15 @@ PgAAh1v///c+AAB+Zv//Dz8AAHRx//8lPwAAa3z//zk/AABih///TD8AAFmS//9dPwAAUJ3//2w/
 AABHqP//ej8AAD6z//+FPwAANb7//48/AAAsyf//lz8AACPU//+ePwAAGt///6M/AAAR6v//pj8A
 AAj1//+nPwAA/////w=="""
 
-    verts = np.frombuffer(base64.decodebytes(data), dtype='<i4')
+    import base64
+    if hasattr(base64, 'encodebytes'):
+        # Python 3 case
+        decodebytes = base64.decodebytes
+    else:
+        # Python 2 case
+        decodebytes = base64.decodestring
+
+    verts = np.fromstring(decodebytes(data), dtype='<i4')
     verts = verts.reshape((len(verts) // 2, 2))
     path = Path(verts)
     segs = path.iter_segments(transforms.IdentityTransform(),

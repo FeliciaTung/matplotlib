@@ -2,10 +2,16 @@
 A module providing some utility functions regarding bezier path manipulation.
 """
 
-import numpy as np
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
-import matplotlib.cbook as cbook
+import six
+
+import numpy as np
 from matplotlib.path import Path
+
+from operator import xor
+import warnings
 
 
 class NonIntersectingPathException(ValueError):
@@ -31,9 +37,8 @@ def get_intersection(cx1, cy1, cos_t1, sin_t1,
     c, d = sin_t2, -cos_t2
 
     ad_bc = a * d - b * c
-    if np.abs(ad_bc) < 1.0e-12:
-        raise ValueError("Given lines do not intersect. Please verify that "
-                         "the angles are not equal or differ by 180 degrees.")
+    if ad_bc == 0.:
+        raise ValueError("Given lines do not intersect")
 
     # rhs_inverse
     a_, b_ = d, -b
@@ -77,9 +82,9 @@ def _de_casteljau1(beta, t):
 
 
 def split_de_casteljau(beta, t):
-    """
-    Split a bezier segment defined by its control points *beta* into two
-    separate segments divided at *t* and return their control points.
+    """split a bezier segment defined by its controlpoints *beta*
+    into two separate segment divided at *t* and return their control points.
+
     """
     beta = np.asarray(beta)
     beta_list = [beta]
@@ -94,15 +99,16 @@ def split_de_casteljau(beta, t):
     return left_beta, right_beta
 
 
-@cbook._rename_parameter("3.1", "tolerence", "tolerance")
-def find_bezier_t_intersecting_with_closedpath(
-        bezier_point_at_t, inside_closedpath, t0=0., t1=1., tolerance=0.01):
+# FIXME spelling mistake in the name of the parameter ``tolerence``
+def find_bezier_t_intersecting_with_closedpath(bezier_point_at_t,
+                                               inside_closedpath,
+                                               t0=0., t1=1., tolerence=0.01):
     """ Find a parameter t0 and t1 of the given bezier path which
     bounds the intersecting points with a provided closed
     path(*inside_closedpath*). Search starts from *t0* and *t1* and it
     uses a simple bisecting algorithm therefore one of the end point
-    must be inside the path while the other doesn't. The search stop
-    when |t0-t1| gets smaller than the given tolerance.
+    must be inside the path while the orther doesn't. The search stop
+    when |t0-t1| gets smaller than the given tolerence.
     value for
 
     - bezier_point_at_t : a function which returns x, y coordinates at *t*
@@ -124,8 +130,8 @@ def find_bezier_t_intersecting_with_closedpath(
 
     while True:
 
-        # return if the distance is smaller than the tolerance
-        if np.hypot(start[0] - end[0], start[1] - end[1]) < tolerance:
+        # return if the distance is smaller than the tolerence
+        if np.hypot(start[0] - end[0], start[1] - end[1]) < tolerence:
             return t0, t1
 
         # calculate the middle point
@@ -133,7 +139,7 @@ def find_bezier_t_intersecting_with_closedpath(
         middle = bezier_point_at_t(middle_t)
         middle_inside = inside_closedpath(middle)
 
-        if start_inside ^ middle_inside:
+        if xor(start_inside, middle_inside):
             t1 = middle_t
             end = middle
             end_inside = middle_inside
@@ -157,7 +163,7 @@ class BezierSegment(object):
     def __init__(self, control_points):
         """
         *control_points* : location of contol points. It needs have a
-         shape of n * 2, where n is the order of the bezier line. 1<=
+         shpae of n * 2, where n is the order of the bezier line. 1<=
          n <= 3 is supported.
         """
         _o = len(control_points)
@@ -176,9 +182,9 @@ class BezierSegment(object):
         return _x, _y
 
 
-@cbook._rename_parameter("3.1", "tolerence", "tolerance")
-def split_bezier_intersecting_with_closedpath(
-        bezier, inside_closedpath, tolerance=0.01):
+def split_bezier_intersecting_with_closedpath(bezier,
+                                              inside_closedpath,
+                                              tolerence=0.01):
 
     """
     bezier : control points of the bezier segment
@@ -189,17 +195,17 @@ def split_bezier_intersecting_with_closedpath(
     bz = BezierSegment(bezier)
     bezier_point_at_t = bz.point_at_t
 
-    t0, t1 = find_bezier_t_intersecting_with_closedpath(
-        bezier_point_at_t, inside_closedpath, tolerance=tolerance)
+    t0, t1 = find_bezier_t_intersecting_with_closedpath(bezier_point_at_t,
+                                                        inside_closedpath,
+                                                        tolerence=tolerence)
 
     _left, _right = split_de_casteljau(bezier, (t0 + t1) / 2.)
     return _left, _right
 
 
-@cbook.deprecated("3.1")
-@cbook._rename_parameter("3.1", "tolerence", "tolerance")
-def find_r_to_boundary_of_closedpath(
-        inside_closedpath, xy, cos_t, sin_t, rmin=0., rmax=1., tolerance=0.01):
+def find_r_to_boundary_of_closedpath(inside_closedpath, xy,
+                                     cos_t, sin_t,
+                                     rmin=0., rmax=1., tolerence=0.01):
     """
     Find a radius r (centered at *xy*) between *rmin* and *rmax* at
     which it intersect with the path.
@@ -215,14 +221,14 @@ def find_r_to_boundary_of_closedpath(
     def _f(r):
         return cos_t * r + cx, sin_t * r + cy
 
-    find_bezier_t_intersecting_with_closedpath(
-        _f, inside_closedpath, t0=rmin, t1=rmax, tolerance=tolerance)
+    find_bezier_t_intersecting_with_closedpath(_f, inside_closedpath,
+                                               t0=rmin, t1=rmax,
+                                               tolerence=tolerence)
 
 # matplotlib specific
 
 
-@cbook._rename_parameter("3.1", "tolerence", "tolerance")
-def split_path_inout(path, inside, tolerance=0.01, reorder_inout=False):
+def split_path_inout(path, inside, tolerence=0.01, reorder_inout=False):
     """ divide a path into two segment at the point where inside(x, y)
     becomes False.
     """
@@ -251,7 +257,7 @@ def split_path_inout(path, inside, tolerance=0.01, reorder_inout=False):
 
     bp = bezier_path.reshape((-1, 2))
     left, right = split_bezier_intersecting_with_closedpath(
-        bp, inside, tolerance)
+        bp, inside, tolerence)
     if len(left) == 2:
         codes_left = [Path.LINETO]
         codes_right = [Path.MOVETO, Path.LINETO]
@@ -278,7 +284,7 @@ def split_path_inout(path, inside, tolerance=0.01, reorder_inout=False):
         path_out = Path(concat([verts_right, path.vertices[i:]]),
                         concat([codes_right, path.codes[i:]]))
 
-    if reorder_inout and not begin_inside:
+    if reorder_inout and begin_inside is False:
         path_in, path_out = path_out, path_in
 
     return path_in, path_out
@@ -304,19 +310,18 @@ def get_cos_sin(x0, y0, x1, y1):
     return dx / d, dy / d
 
 
-@cbook._rename_parameter("3.1", "tolerence", "tolerance")
-def check_if_parallel(dx1, dy1, dx2, dy2, tolerance=1.e-5):
+def check_if_parallel(dx1, dy1, dx2, dy2, tolerence=1.e-5):
     """ returns
-       * 1 if two lines are parallel in same direction
-       * -1 if two lines are parallel in opposite direction
+       * 1 if two lines are parralel in same direction
+       * -1 if two lines are parralel in opposite direction
        * 0 otherwise
     """
     theta1 = np.arctan2(dx1, dy1)
     theta2 = np.arctan2(dx2, dy2)
     dtheta = np.abs(theta1 - theta2)
-    if dtheta < tolerance:
+    if dtheta < tolerence:
         return 1
-    elif np.abs(dtheta - np.pi) < tolerance:
+    elif np.abs(dtheta - np.pi) < tolerence:
         return -1
     else:
         return False
@@ -342,7 +347,7 @@ def get_parallels(bezier2, width):
                                       cmx - c2x, cmy - c2y)
 
     if parallel_test == -1:
-        cbook._warn_external(
+        warnings.warn(
             "Lines do not intersect. A straight line is used instead.")
         cos_t1, sin_t1 = get_cos_sin(c1x, c1y, c2x, c2y)
         cos_t2, sin_t2 = cos_t1, sin_t1
@@ -363,12 +368,12 @@ def get_parallels(bezier2, width):
         get_normal_points(c2x, c2y, cos_t2, sin_t2, width)
     )
 
-    # find cm_left which is the intersecting point of a line through
+    # find cm_left which is the intersectng point of a line through
     # c1_left with angle t1 and a line through c2_left with angle
     # t2. Same with cm_right.
     if parallel_test != 0:
         # a special case for a straight line, i.e., angle between two
-        # lines are smaller than some (arbitrary) value.
+        # lines are smaller than some (arbitrtay) value.
         cmx_left, cmy_left = (
             0.5 * (c1x_left + c2x_left), 0.5 * (c1y_left + c2y_left)
         )
@@ -409,7 +414,7 @@ def find_control_points(c1x, c1y, mmx, mmy, c2x, c2y):
 
 def make_wedged_bezier2(bezier2, width, w1=1., wm=0.5, w2=0.):
     """
-    Being similar to get_parallels, returns control points of two quadratic
+    Being similar to get_parallels, returns control points of two quadrativ
     bezier lines having a width roughly parallel to given one separated by
     *width*.
     """
@@ -460,21 +465,31 @@ def make_wedged_bezier2(bezier2, width, w1=1., wm=0.5, w2=0.):
 
 def make_path_regular(p):
     """
-    If the :attr:`codes` attribute of `Path` *p* is None, return a copy of *p*
-    with the :attr:`codes` set to (MOVETO, LINETO, LINETO, ..., LINETO);
-    otherwise return *p* itself.
+    fill in the codes if None.
     """
     c = p.codes
     if c is None:
-        c = np.full(len(p.vertices), Path.LINETO, dtype=Path.code_type)
+        c = np.empty(p.vertices.shape[:1], "i")
+        c.fill(Path.LINETO)
         c[0] = Path.MOVETO
+
         return Path(p.vertices, c)
     else:
         return p
 
 
 def concatenate_paths(paths):
-    """Concatenate a list of paths into a single path."""
-    vertices = np.concatenate([p.vertices for p in paths])
-    codes = np.concatenate([make_path_regular(p).codes for p in paths])
-    return Path(vertices, codes)
+    """
+    concatenate list of paths into a single path.
+    """
+
+    vertices = []
+    codes = []
+    for p in paths:
+        p = make_path_regular(p)
+        vertices.append(p.vertices)
+        codes.append(p.codes)
+
+    _path = Path(np.concatenate(vertices),
+                 np.concatenate(codes))
+    return _path

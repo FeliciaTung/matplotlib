@@ -5,6 +5,7 @@ Menu
 
 """
 import numpy as np
+import matplotlib
 import matplotlib.colors as colors
 import matplotlib.patches as patches
 import matplotlib.mathtext as mathtext
@@ -89,6 +90,7 @@ class MenuItem(artist.Artist):
         self.label.ox = x + self.padx
         self.label.oy = y - self.depth + self.pady/2.
 
+        self.rect._update_patch_transform()
         self.hover = False
 
     def draw(self, renderer):

@@ -16,6 +16,7 @@ For more information on violin plots and KDE, the scikit-learn docs
 have a great section: http://scikit-learn.org/stable/modules/density.html
 """
 
+import random
 import numpy as np
 import matplotlib.pyplot as plt
 

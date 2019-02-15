@@ -1,6 +1,10 @@
-*******************
-``matplotlib.text``
-*******************
+****
+text
+****
+
+
+:mod:`matplotlib.text`
+=======================
 
 .. automodule:: matplotlib.text
    :members:

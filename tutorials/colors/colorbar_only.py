@@ -8,10 +8,12 @@ This tutorial shows how to build colorbars without an attached plot.
 Customized Colorbars
 ====================
 
-`~matplotlib.colorbar.ColorbarBase` puts a colorbar in a specified axes,
-and can make a colorbar for a given colormap; it does not need a mappable
-object like an image. In this tutorial we will explore what can be done with
-standalone colorbar.
+:class:`~matplotlib.colorbar.ColorbarBase` derives from
+:mod:`~matplotlib.cm.ScalarMappable` and puts a colorbar in a specified axes,
+so it has everything needed for a standalone colorbar. It can be used as is to
+make a colorbar for a given colormap and does not need a mappable object like
+an image. In this tutorial we will explore what can be done with standalone
+colorbar.
 
 Basic continuous colorbar
 -------------------------
@@ -20,15 +22,14 @@ Set the colormap and norm to correspond to the data for which the colorbar
 will be used. Then create the colorbar by calling
 :class:`~matplotlib.colorbar.ColorbarBase` and specify axis, colormap, norm
 and orientation as parameters. Here we create a basic continuous colorbar
-with ticks and labels. For more information see the
-:mod:`~matplotlib.colorbar` API.
+with ticks and labels. More information on colorbar api can be found
+`here <https://matplotlib.org/api/colorbar_api.html>`.
 """
 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
-fig, ax = plt.subplots(figsize=(6, 1))
-fig.subplots_adjust(bottom=0.5)
+fig, ax = plt.subplots()
 
 cmap = mpl.cm.cool
 norm = mpl.colors.Normalize(vmin=5, vmax=10)
@@ -61,8 +62,7 @@ fig.show()
 # *extend*, you must specify two extra boundaries. Finally spacing argument
 # ensures that intervals are shown on colorbar proportionally.
 
-fig, ax = plt.subplots(figsize=(6, 1))
-fig.subplots_adjust(bottom=0.5)
+fig, ax = plt.subplots()
 
 cmap = mpl.colors.ListedColormap(['red', 'green', 'blue', 'cyan'])
 cmap.set_over('0.25')
@@ -85,11 +85,10 @@ fig.show()
 # --------------------------------------
 #
 # Here we illustrate the use of custom length colorbar extensions, used on a
-# colorbar with discrete intervals. To make the length of each extension the
-# same as the length of the interior colors, use ``extendfrac='auto'``.
+# colorbar with discrete intervals. To make the length of each extension same
+# as the length of the interior colors, use ``extendfrac='auto'``.
 
-fig, ax = plt.subplots(figsize=(6, 1))
-fig.subplots_adjust(bottom=0.5)
+fig, ax = plt.subplots()
 
 cmap = mpl.colors.ListedColormap(['royalblue', 'cyan',
                                   'yellow', 'orange'])

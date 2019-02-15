@@ -9,8 +9,7 @@ conversion factor, but this example shows that Matplotlib is entirely agnostic
 to what kind of units client packages use.
 """
 
-import numpy as np
-
+from matplotlib.cbook import iterable
 import matplotlib.units as units
 import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt
@@ -27,7 +26,7 @@ class Foo(object):
         return self._val / unit
 
 
-class FooConverter(units.ConversionInterface):
+class FooConverter(object):
     @staticmethod
     def axisinfo(unit, axis):
         'return the Foo AxisInfo'
@@ -50,7 +49,7 @@ class FooConverter(units.ConversionInterface):
         if units.ConversionInterface.is_numlike(obj):
             return obj
 
-        if np.iterable(obj):
+        if iterable(obj):
             return [o.value(unit) for o in obj]
         else:
             return obj.value(unit)
@@ -58,7 +57,7 @@ class FooConverter(units.ConversionInterface):
     @staticmethod
     def default_units(x, axis):
         'return the default unit for x or None'
-        if np.iterable(x):
+        if iterable(x):
             for thisx in x:
                 return thisx.unit
         else:

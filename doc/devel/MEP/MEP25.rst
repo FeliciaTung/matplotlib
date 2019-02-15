@@ -7,9 +7,7 @@ MEP25: Serialization
 Status
 ------
 
-**Rejected**
-
-This work is important, but this particular effort has stalled.
+**Discussion**
 
 Branches and Pull requests
 --------------------------

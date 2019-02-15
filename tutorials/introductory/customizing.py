@@ -1,18 +1,17 @@
 """
-Customizing Matplotlib with style sheets and rcParams
-=====================================================
+Customizing matplotlib
+======================
 
-Tips for customizing the properties and default styles of Matplotlib.
+Tips for customizing the properties and default styles of matplotlib.
 
 Using style sheets
 ------------------
 
 The ``style`` package adds support for easy-to-switch plotting "styles" with
-the same parameters as a
-:ref:`matplotlib rc <customizing-with-matplotlibrc-files>` file (which is read
-at startup to configure matplotlib).
+the same parameters as a matplotlibrc_ file (which is read at startup to
+configure matplotlib).
 
-There are a number of pre-defined styles `provided by Matplotlib`_. For
+There are a number of pre-defined styles provided by matplotlib. For
 example, there's a pre-defined style called "ggplot", which emulates the
 aesthetics of ggplot_ (a popular plotting package for R_). To use this style,
 just add:
@@ -86,13 +85,11 @@ print(plt.style.available)
 # for limiting your changes to a specific scope. To isolate your styling
 # changes, you can write something like the following:
 
-with plt.style.context('dark_background'):
+with plt.style.context(('dark_background')):
     plt.plot(np.sin(np.linspace(0, 2 * np.pi)), 'r-o')
 plt.show()
 
 ###############################################################################
-# .. _matplotlib-rcparams:
-#
 # matplotlib rcParams
 # ===================
 #
@@ -154,8 +151,8 @@ plt.plot(data)
 #
 # 4. :file:`{INSTALL}/matplotlib/mpl-data/matplotlibrc`, where
 #    :file:`{INSTALL}` is something like
-#    :file:`/usr/lib/python3.7/site-packages` on Linux, and maybe
-#    :file:`C:\\Python37\\Lib\\site-packages` on Windows. Every time you
+#    :file:`/usr/lib/python3.5/site-packages` on Linux, and maybe
+#    :file:`C:\\Python35\\Lib\\site-packages` on Windows. Every time you
 #    install matplotlib, this file will be overwritten, so if you want
 #    your customizations to be saved, please move this file to your
 #    user-specific matplotlib directory.
@@ -171,6 +168,12 @@ plt.plot(data)
 #   '/home/foo/.config/matplotlib/matplotlibrc'
 #
 # See below for a sample :ref:`matplotlibrc file<matplotlibrc-sample>`.
+# Although all parameters are optional, you should almost always set the
+# `backend` or else matplotlib will choose `Agg`, a *non-interactive* backend.
+# This can lead to unexpected behavior, since if you do not have a
+# :file:`matplotlibrc` file, it would normally fall back to
+# :file:`{INSTALL}/matplotlib/mpl-data/matplotlibrc`, which is often set to an
+# interactive backend by the package maintainer.
 #
 # .. _matplotlibrc-sample:
 #
@@ -180,6 +183,6 @@ plt.plot(data)
 # .. literalinclude:: ../../../matplotlibrc.template
 #
 #
+# .. _matplotlibrc: http://matplotlib.org/users/customizing.html
 # .. _ggplot: http://ggplot2.org/
 # .. _R: https://www.r-project.org/
-# .. _provided by Matplotlib: https://github.com/matplotlib/matplotlib/tree/master/lib/matplotlib/mpl-data/stylelib

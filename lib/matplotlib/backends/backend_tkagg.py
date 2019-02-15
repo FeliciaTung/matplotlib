@@ -1,4 +1,4 @@
-from . import _backend_tk
+from . import tkagg  # Paint image to Tk photo blitter extension.
 from .backend_agg import FigureCanvasAgg
 from ._backend_tk import (
     _BackendTk, FigureCanvasTk, FigureManagerTk, NavigationToolbar2Tk)
@@ -7,12 +7,12 @@ from ._backend_tk import (
 class FigureCanvasTkAgg(FigureCanvasAgg, FigureCanvasTk):
     def draw(self):
         super(FigureCanvasTkAgg, self).draw()
-        _backend_tk.blit(self._tkphoto, self.renderer._renderer, (0, 1, 2, 3))
+        tkagg.blit(self._tkphoto, self.renderer._renderer, colormode=2)
         self._master.update_idletasks()
 
     def blit(self, bbox=None):
-        _backend_tk.blit(
-            self._tkphoto, self.renderer._renderer, (0, 1, 2, 3), bbox=bbox)
+        tkagg.blit(
+            self._tkphoto, self.renderer._renderer, bbox=bbox, colormode=2)
         self._master.update_idletasks()
 
 

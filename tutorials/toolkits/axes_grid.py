@@ -1,4 +1,4 @@
-r"""
+"""
 ==============================
 Overview of axes_grid1 toolkit
 ==============================
@@ -127,10 +127,10 @@ ImageGrid takes following arguments,
   data limits (similar to aspect parameter in mpl).
 
  *share_all*
-  if True, xaxis and yaxis of all axes are shared.
+  if True, xaxis  and yaxis of all axes are shared.
 
  *direction*
-  direction of increasing axes number.  For "row",
+  direction of increasing axes number.   For "row",
 
    +---------+---------+
    | grid[0] | grid[1] |
@@ -259,7 +259,7 @@ the host axes and then drawn according to their zorder.  The host and
 parasite axes modifies some of the axes behavior. For example, color
 cycle for plot lines are shared between host and parasites. Also, the
 legend command in host, creates a legend that includes lines in the
-parasite axes.  To create a host axes, you may use *host_subplot* or
+parasite axes.  To create a host axes, you may use *host_suplot* or
 *host_axes* command.
 
 
@@ -341,7 +341,7 @@ of the parent axes. For example,::
     inset_axes = inset_axes(parent_axes,
                             width="30%", # width = 30% of parent_bbox
                             height=1., # height : 1 inch
-                            loc='lower left')
+                            loc=3)
 
 creates an inset axes whose width is 30% of the parent axes and whose
 height is fixed at 1 inch.
@@ -352,7 +352,7 @@ some factor. For example, ::
 
     inset_axes = zoomed_inset_axes(ax,
                                    0.5, # zoom = 0.5
-                                   loc='upper right')
+                                   loc=1)
 
 creates an inset axes whose data scale is half of the parent axes.
 Here is complete examples.
@@ -388,7 +388,7 @@ yaxis of each axes are shared. ::
 
     from mpl_toolkits.axes_grid1.axes_rgb import RGBAxes
 
-    fig = plt.figure()
+    fig = plt.figure(1)
     ax = RGBAxes(fig, [0.1, 0.1, 0.8, 0.8])
 
     r, g, b = get_rgb() # r,g,b are 2-d images

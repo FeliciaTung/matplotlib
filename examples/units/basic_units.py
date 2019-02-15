@@ -11,6 +11,8 @@ import numpy as np
 
 import matplotlib.units as units
 import matplotlib.ticker as ticker
+from matplotlib.axes import Axes
+from matplotlib.cbook import iterable
 
 
 class ProxyDelegate(object):
@@ -23,13 +25,13 @@ class ProxyDelegate(object):
 
 
 class TaggedValueMeta(type):
-    def __init__(self, name, bases, dict):
-        for fn_name in self._proxies:
+    def __init__(cls, name, bases, dict):
+        for fn_name in cls._proxies:
             try:
-                dummy = getattr(self, fn_name)
+                dummy = getattr(cls, fn_name)
             except AttributeError:
-                setattr(self, fn_name,
-                        ProxyDelegate(fn_name, self._proxies[fn_name]))
+                setattr(cls, fn_name,
+                        ProxyDelegate(fn_name, cls._proxies[fn_name]))
 
 
 class PassThroughProxy(object):
@@ -87,7 +89,7 @@ class ConvertAllProxy(PassThroughProxy):
             if hasattr(a, 'convert_to'):
                 try:
                     a = a.convert_to(self.unit)
-                except Exception:
+                except:
                     pass
                 arg_units.append(a.get_unit())
                 converted_args.append(a.get_value())
@@ -122,8 +124,9 @@ class TaggedValue(metaclass=TaggedValueMeta):
         # generate a new subclass for value
         value_class = type(value)
         try:
-            subcls = type(f'TaggedValue_of_{value_class.__name__}',
-                          (cls, value_class), {})
+            subcls = type('TaggedValue_of_%s' % (value_class.__name__),
+                          tuple([cls, value_class]),
+                          {})
             if subcls not in units.registry:
                 units.registry[subcls] = basicConverter
             return object.__new__(subcls)
@@ -152,7 +155,7 @@ class TaggedValue(metaclass=TaggedValueMeta):
         return TaggedValue(array, self.unit)
 
     def __repr__(self):
-        return 'TaggedValue({!r}, {!r})'.format(self.value, self.unit)
+        return 'TaggedValue(' + repr(self.value) + ', ' + repr(self.unit) + ')'
 
     def __str__(self):
         return str(self.value) + ' in ' + str(self.unit)
@@ -173,10 +176,7 @@ class TaggedValue(metaclass=TaggedValueMeta):
     def convert_to(self, unit):
         if unit == self.unit or not unit:
             return self
-        try:
-            new_value = self.unit.convert_value_to(self.value, unit)
-        except AttributeError:
-            new_value = self
+        new_value = self.unit.convert_value_to(self.value, unit)
         return TaggedValue(new_value, unit)
 
     def get_value(self):
@@ -195,7 +195,7 @@ class BasicUnit(object):
         self.conversions = dict()
 
     def __repr__(self):
-        return f'BasicUnit({self.name})'
+        return 'BasicUnit(%s)' % self.name
 
     def __str__(self):
         return self.fullname
@@ -250,13 +250,13 @@ class BasicUnit(object):
 class UnitResolver(object):
     def addition_rule(self, units):
         for unit_1, unit_2 in zip(units[:-1], units[1:]):
-            if unit_1 != unit_2:
+            if (unit_1 != unit_2):
                 return NotImplemented
         return units[0]
 
     def multiplication_rule(self, units):
         non_null = [u for u in units if u]
-        if len(non_null) > 1:
+        if (len(non_null) > 1):
             return NotImplemented
         return non_null[0]
 
@@ -269,7 +269,7 @@ class UnitResolver(object):
         '__rsub__': addition_rule}
 
     def __call__(self, operation, units):
-        if operation not in self.op_dict:
+        if (operation not in self.op_dict):
             return NotImplemented
 
         return self.op_dict[operation](self, units)
@@ -297,25 +297,17 @@ secs.add_conversion_factor(minutes, 1/60.0)
 
 # radians formatting
 def rad_fn(x, pos=None):
-    if x >= 0:
-        n = int((x / np.pi) * 2.0 + 0.25)
-    else:
-        n = int((x / np.pi) * 2.0 - 0.25)
-
+    n = int((x / np.pi) * 2.0 + 0.25)
     if n == 0:
         return '0'
     elif n == 1:
         return r'$\pi/2$'
     elif n == 2:
         return r'$\pi$'
-    elif n == -1:
-        return r'$-\pi/2$'
-    elif n == -2:
-        return r'$-\pi$'
     elif n % 2 == 0:
-        return fr'${n//2}\pi$'
+        return r'$%s\pi$' % (n//2,)
     else:
-        return fr'${n}\pi/2$'
+        return r'$%s\pi/2$' % (n,)
 
 
 class BasicUnitConverter(units.ConversionInterface):
@@ -346,35 +338,22 @@ class BasicUnitConverter(units.ConversionInterface):
     def convert(val, unit, axis):
         if units.ConversionInterface.is_numlike(val):
             return val
-        if np.iterable(val):
-            if isinstance(val, np.ma.MaskedArray):
-                val = val.astype(float).filled(np.nan)
-            out = np.empty(len(val))
-            for i, thisval in enumerate(val):
-                if np.ma.is_masked(thisval):
-                    out[i] = np.nan
-                else:
-                    try:
-                        out[i] = thisval.convert_to(unit).get_value()
-                    except AttributeError:
-                        out[i] = thisval
-            return out
-        if np.ma.is_masked(val):
-            return np.nan
+        if iterable(val):
+            return [thisval.convert_to(unit).get_value() for thisval in val]
         else:
             return val.convert_to(unit).get_value()
 
     @staticmethod
     def default_units(x, axis):
         'return the default unit for x or None'
-        if np.iterable(x):
+        if iterable(x):
             for thisx in x:
                 return thisx.unit
         return x.unit
 
 
 def cos(x):
-    if np.iterable(x):
+    if iterable(x):
         return [math.cos(val.convert_to(radians).get_value()) for val in x]
     else:
         return math.cos(x.convert_to(radians).get_value())

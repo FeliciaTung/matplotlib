@@ -1,3 +1,6 @@
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
 import os
 
 from matplotlib._pylab_helpers import Gcf
@@ -82,15 +85,13 @@ class FigureCanvasMac(_macosx.FigureCanvas, FigureCanvasAgg):
         return renderer
 
     def draw(self):
-        # docstring inherited
         self.invalidate()
         self.flush_events()
 
     def draw_idle(self, *args, **kwargs):
-        # docstring inherited
         self.invalidate()
 
-    def blit(self, bbox=None):
+    def blit(self, bbox):
         self.invalidate()
 
     def resize(self, width, height):
@@ -104,7 +105,19 @@ class FigureCanvasMac(_macosx.FigureCanvas, FigureCanvasAgg):
         self.draw_idle()
 
     def new_timer(self, *args, **kwargs):
-        # docstring inherited
+        """
+        Creates a new backend-specific subclass of `backend_bases.Timer`.
+        This is useful for getting periodic events through the backend's native
+        event loop. Implemented only for backends with GUIs.
+
+        Other Parameters
+        ----------------
+        interval : scalar
+            Timer interval in milliseconds
+        callbacks : list
+            Sequence of (func, args, kwargs) where ``func(*args, **kwargs)``
+            will be executed by the timer every *interval*.
+        """
         return TimerMac(*args, **kwargs)
 
 
@@ -116,12 +129,17 @@ class FigureManagerMac(_macosx.FigureManager, FigureManagerBase):
         FigureManagerBase.__init__(self, canvas, num)
         title = "Figure %d" % num
         _macosx.FigureManager.__init__(self, canvas, title)
-        if rcParams['toolbar'] == 'toolbar2':
+        if rcParams['toolbar']=='toolbar2':
             self.toolbar = NavigationToolbar2Mac(canvas)
         else:
             self.toolbar = None
         if self.toolbar is not None:
             self.toolbar.update()
+
+        def notify_axes_change(fig):
+            'this will be called whenever the current axes is changed'
+            if self.toolbar != None: self.toolbar.update()
+        self.canvas.figure.add_axobserver(notify_axes_change)
 
         if matplotlib.is_interactive():
             self.show()
@@ -152,12 +170,12 @@ class NavigationToolbar2Mac(_macosx.NavigationToolbar2, NavigationToolbar2):
     def save_figure(self, *args):
         filename = _macosx.choose_save_file('Save the figure',
                                             self.canvas.get_default_filename())
-        if filename is None:  # Cancel
+        if filename is None: # Cancel
             return
         self.canvas.figure.savefig(filename)
 
     def prepare_configure_subplots(self):
-        toolfig = Figure(figsize=(6, 3))
+        toolfig = Figure(figsize=(6,3))
         canvas = FigureCanvasMac(toolfig)
         toolfig.subplots_adjust(top=0.9)
         tool = SubplotTool(self.canvas.figure, toolfig)
@@ -175,7 +193,6 @@ class NavigationToolbar2Mac(_macosx.NavigationToolbar2, NavigationToolbar2):
 
 @_Backend.export
 class _BackendMac(_Backend):
-    required_interactive_framework = "macosx"
     FigureCanvas = FigureCanvasMac
     FigureManager = FigureManagerMac
 

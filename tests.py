@@ -33,7 +33,7 @@ if __name__ == '__main__':
         category=DeprecationWarning)
     warnings.filterwarnings(
         'default',
-        r'.*inspect.getargspec\(\) is deprecated.*',
+        '.*inspect.getargspec\(\) is deprecated.*',
         category=DeprecationWarning)
 
     from matplotlib import test

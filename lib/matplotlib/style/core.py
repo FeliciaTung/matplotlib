@@ -1,3 +1,7 @@
+from __future__ import absolute_import, division, print_function
+
+import six
+
 """
 Core functions and attributes for the matplotlib style library:
 
@@ -10,24 +14,21 @@ Core functions and attributes for the matplotlib style library:
 ``library``
     A dictionary of style names and matplotlib settings.
 """
-
-import contextlib
-import logging
 import os
 import re
+import contextlib
 import warnings
 
 import matplotlib as mpl
-from matplotlib import cbook, rc_params_from_file, rcParamsDefault
+from matplotlib import rc_params_from_file, rcParamsDefault
 
-_log = logging.getLogger(__name__)
 
 __all__ = ['use', 'context', 'available', 'library', 'reload_library']
 
 
 BASE_LIBRARY_PATH = os.path.join(mpl.get_data_path(), 'stylelib')
 # Users may want multiple library paths, so store a list of paths.
-USER_LIBRARY_PATHS = [os.path.join(mpl.get_configdir(), 'stylelib')]
+USER_LIBRARY_PATHS = [os.path.join(mpl._get_configdir(), 'stylelib')]
 STYLE_EXTENSION = 'mplstyle'
 STYLE_FILE_PATTERN = re.compile(r'([\S]+).%s$' % STYLE_EXTENSION)
 
@@ -45,7 +46,7 @@ def _remove_blacklisted_style_params(d, warn=True):
     for key, val in d.items():
         if key in STYLE_BLACKLIST:
             if warn:
-                cbook._warn_external(
+                warnings.warn(
                     "Style includes a parameter, '{0}', that is not related "
                     "to style.  Ignoring".format(key))
         else:
@@ -88,22 +89,21 @@ def use(style):
     """
     style_alias = {'mpl20': 'default',
                    'mpl15': 'classic'}
-    if isinstance(style, str) or hasattr(style, 'keys'):
+    if isinstance(style, six.string_types) or hasattr(style, 'keys'):
         # If name is a single str or dict, make it a single element list.
         styles = [style]
     else:
         styles = style
 
-    styles = (style_alias.get(s, s) if isinstance(s, str) else s
+    styles = (style_alias.get(s, s)
+              if isinstance(s, six.string_types)
+              else s
               for s in styles)
     for style in styles:
-        if not isinstance(style, str):
+        if not isinstance(style, six.string_types):
             _apply_style(style)
         elif style == 'default':
-            # Deprecation warnings were already handled when creating
-            # rcParamsDefault, no need to reemit them here.
-            with cbook._suppress_matplotlib_deprecation_warning():
-                _apply_style(rcParamsDefault, warn=False)
+            _apply_style(rcParamsDefault, warn=False)
         elif style in library:
             _apply_style(library[style])
         else:
@@ -141,16 +141,25 @@ def context(style, after_reset=False):
         If True, apply style after resetting settings to their defaults;
         otherwise, apply style on top of the current settings.
     """
-    with mpl.rc_context():
-        if after_reset:
-            mpl.rcdefaults()
+    initial_settings = mpl.rcParams.copy()
+    if after_reset:
+        mpl.rcdefaults()
+    try:
         use(style)
+    except:
+        # Restore original settings before raising errors during the update.
+        mpl.rcParams.update(initial_settings)
+        raise
+    else:
         yield
+    finally:
+        mpl.rcParams.update(initial_settings)
 
 
 def load_base_library():
     """Load style library defined in this package."""
-    library = read_style_directory(BASE_LIBRARY_PATH)
+    library = dict()
+    library.update(read_style_directory(BASE_LIBRARY_PATH))
     return library
 
 
@@ -176,7 +185,7 @@ def iter_style_files(style_dir):
         if is_style_file(filename):
             match = STYLE_FILE_PATTERN.match(filename)
             path = os.path.abspath(os.path.join(style_dir, path))
-            yield path, match.group(1)
+            yield path, match.groups()[0]
 
 
 def read_style_directory(style_dir):
@@ -189,7 +198,7 @@ def read_style_directory(style_dir):
 
         for w in warns:
             message = 'In %s: %s' % (path, w.message)
-            _log.warning(message)
+            warnings.warn(message)
 
     return styles
 
@@ -202,8 +211,11 @@ def update_nested_dict(main_dict, new_dict):
     already exists. Instead you should update the sub-dict.
     """
     # update named styles specified by user
-    for name, rc_dict in new_dict.items():
-        main_dict.setdefault(name, {}).update(rc_dict)
+    for name, rc_dict in six.iteritems(new_dict):
+        if name in main_dict:
+            main_dict[name].update(rc_dict)
+        else:
+            main_dict[name] = rc_dict
     return main_dict
 
 

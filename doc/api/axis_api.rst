@@ -1,6 +1,6 @@
-*******************
-``matplotlib.axis``
-*******************
+===================
+ axis and tick API
+===================
 
 .. contents:: Table of Contents
    :depth: 3
@@ -470,6 +470,7 @@ Ticks
 
 
    Tick.add_callback
+   Tick.aname
    Tick.axes
    Tick.contains
    Tick.convert_xunits
@@ -535,6 +536,7 @@ Ticks
    Tick.zorder
 
    XTick.add_callback
+   XTick.aname
    XTick.axes
    XTick.contains
    XTick.convert_xunits
@@ -600,6 +602,7 @@ Ticks
    XTick.zorder
 
    YTick.add_callback
+   YTick.aname
    YTick.axes
    YTick.contains
    YTick.convert_xunits
@@ -675,6 +678,7 @@ Axis
 
 
    Axis.add_callback
+   Axis.aname
    Axis.axes
    Axis.contains
    Axis.convert_xunits
@@ -740,6 +744,7 @@ Axis
    Axis.zorder
 
    XAxis.add_callback
+   XAxis.aname
    XAxis.axes
    XAxis.contains
    XAxis.convert_xunits
@@ -805,6 +810,7 @@ Axis
    XAxis.zorder
 
    YAxis.add_callback
+   YAxis.aname
    YAxis.axes
    YAxis.contains
    YAxis.convert_xunits

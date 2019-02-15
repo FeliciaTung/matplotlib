@@ -1,6 +1,10 @@
-**********************
-``matplotlib.markers``
-**********************
+*******
+markers
+*******
+
+
+:mod:`matplotlib.markers`
+=========================
 
 .. currentmodule:: matplotlib.markers
 

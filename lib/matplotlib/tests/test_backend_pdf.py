@@ -1,9 +1,7 @@
 import io
 import os
-from pathlib import Path
 import sys
 import tempfile
-import warnings
 
 import numpy as np
 import pytest
@@ -16,11 +14,9 @@ from matplotlib.testing.determinism import (_determinism_source_date_epoch,
                                             _determinism_check)
 
 
-with warnings.catch_warnings():
-    warnings.simplefilter('ignore')
-    needs_usetex = pytest.mark.skipif(
-        not checkdep_usetex(True),
-        reason="This test needs a TeX installation")
+needs_usetex = pytest.mark.xfail(
+    not checkdep_usetex(True),
+    reason="This test needs a TeX installation")
 
 
 @image_comparison(baseline_images=['pdf_use14corefonts'],
@@ -32,7 +28,7 @@ def test_use14corefonts():
     rcParams['font.sans-serif'] = ['Helvetica']
     rcParams['pdf.compression'] = 0
 
-    text = '''A three-line text positioned just above a blue line
+    text = u'''A three-line text positioned just above a blue line
 and containing some French characters and the euro symbol:
 "Merci pépé pour les 10 €"'''
 
@@ -133,7 +129,9 @@ def test_composite_image():
         assert len(pdf._file._images) == 2
 
 
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires Python 3.6+")
 def test_pdfpages_fspath():
+    from pathlib import Path
     with PdfPages(Path(os.devnull)) as pdf:
         pdf.savefig(plt.figure())
 
@@ -234,10 +232,3 @@ def test_failing_latex(tmpdir):
     plt.xlabel("$22_2_2$")
     with pytest.raises(RuntimeError):
         plt.savefig(path)
-
-
-def test_empty_rasterized():
-    # Check that empty figures that are rasterised save to pdf files fine
-    fig, ax = plt.subplots()
-    ax.plot([], [], rasterized=True)
-    fig.savefig(io.BytesIO(), format="pdf")

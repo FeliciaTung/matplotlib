@@ -1,6 +1,10 @@
-***************************
-``matplotlib.tight_layout``
-***************************
+************
+tight_layout
+************
+
+
+:mod:`matplotlib.tight_layout`
+==============================
 
 .. automodule:: matplotlib.tight_layout
    :members:

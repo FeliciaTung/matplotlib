@@ -122,7 +122,7 @@ def run(show_browser=True):
         try:
             import webbrowser
             webbrowser.open(index)
-        except Exception:
+        except:
             show_message = True
 
     if show_message:

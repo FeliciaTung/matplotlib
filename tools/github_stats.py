@@ -9,6 +9,9 @@ To generate a report for IPython 2.0, run:
 # Imports
 #-----------------------------------------------------------------------------
 
+from __future__ import print_function
+
+import codecs
 import sys
 
 from argparse import ArgumentParser
@@ -47,7 +50,7 @@ def issues2dict(issues):
         idict[i['number']] = i
     return idict
 
-def split_pulls(all_issues, project="matplotlib/matplotlib"):
+def split_pulls(all_issues, project="ipython/ipython"):
     """split a list of closed issues into non-PR Issues and Pull Requests"""
     pulls = []
     issues = []
@@ -60,7 +63,7 @@ def split_pulls(all_issues, project="matplotlib/matplotlib"):
     return issues, pulls
 
 
-def issues_closed_since(period=timedelta(days=365), project="matplotlib/matplotlib", pulls=False):
+def issues_closed_since(period=timedelta(days=365), project="ipython/ipython", pulls=False):
     """Get all issues closed since a particular point in time. period
     can either be a datetime object, or a timedelta object. In the
     latter case, it is used as a time before the present.
@@ -96,17 +99,21 @@ def report(issues, show_urls=False):
     if show_urls:
         for i in issues:
             role = 'ghpull' if 'merged_at' in i else 'ghissue'
-            print('* :%s:`%d`: %s' % (role, i['number'],
-                                      i['title'].replace('`', '``')))
+            print(u'* :%s:`%d`: %s' % (role, i['number'],
+                                        i['title'].replace(u'`', u'``')))
     else:
         for i in issues:
-            print('* %d: %s' % (i['number'], i['title'].replace('`', '``')))
+            print(u'* %d: %s' % (i['number'], i['title'].replace(u'`', u'``')))
 
 #-----------------------------------------------------------------------------
 # Main script
 #-----------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    # deal with unicode
+    if sys.version_info < (3,):
+        sys.stdout = codecs.getwriter('utf8')(sys.stdout)
+
     # Whether to add reST urls for all issues in printout.
     show_urls = True
 
@@ -120,7 +127,7 @@ if __name__ == "__main__":
     parser.add_argument('--days', type=int,
         help="The number of days of data to summarize (use this or --since-tag)."
     )
-    parser.add_argument('--project', type=str, default="matplotlib/matplotlib",
+    parser.add_argument('--project', type=str, default="ipython/ipython",
         help="The project to summarize."
     )
     parser.add_argument('--links', action='store_true', default=False,
@@ -161,7 +168,7 @@ if __name__ == "__main__":
                 state='closed',
                 auth=True,
         )
-        issues, pulls = split_pulls(issues_and_pulls, project=project)
+        issues, pulls = split_pulls(issues_and_pulls)
     else:
         issues = issues_closed_since(since, project=project, pulls=False)
         pulls = issues_closed_since(since, project=project, pulls=True)
@@ -204,7 +211,7 @@ if __name__ == "__main__":
     ncommits = len(pr_authors) + ncommits - len(pulls)
     author_cmd = ['git', 'check-mailmap'] + pr_authors
     with_email = check_output(author_cmd).decode('utf-8', 'replace').splitlines()
-    all_authors.extend(['* ' + a.split(' <')[0] for a in with_email])
+    all_authors.extend([ u'* ' + a.split(' <')[0] for a in with_email ])
     unique_authors = sorted(set(all_authors), key=lambda s: s.lower())
 
     print("We closed %d issues and merged %d pull requests." % (n_issues, n_pulls))

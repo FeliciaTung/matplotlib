@@ -10,8 +10,8 @@ Composing custom legends piece-by-piece.
    For more information on creating and customizing legends, see the following
    pages:
 
-   * :doc:`/tutorials/intermediate/legend_guide`
-   * :doc:`/gallery/text_labels_and_annotations/legend_demo`
+   * :ref:`sphx_glr_tutorials_intermediate_legend_guide.py`
+   * :ref:`sphx_glr_gallery_text_labels_and_annotations_legend_demo.py`
 
 Sometimes you don't want a legend that is explicitly tied to data that
 you have plotted. For example, say you have plotted 10 lines, but don't

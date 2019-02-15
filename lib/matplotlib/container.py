@@ -1,3 +1,5 @@
+import six
+
 import matplotlib.cbook as cbook
 import matplotlib.artist as martist
 
@@ -14,8 +16,8 @@ class Container(tuple):
         return ("<{} object of {} artists>"
                 .format(type(self).__name__, len(self)))
 
-    def __new__(cls, *args, **kwargs):
-        return tuple.__new__(cls, args[0])
+    def __new__(cls, *kl, **kwargs):
+        return tuple.__new__(cls, kl[0])
 
     def __init__(self, kl, label=None):
 
@@ -50,13 +52,10 @@ class Container(tuple):
         """
         Set the label to *s* for auto legend.
 
-        Parameters
-        ----------
-        s : object
-            Any object other than None gets converted to its `str`.
+        ACCEPTS: string or anything printable with '%s' conversion.
         """
         if s is not None:
-            self._label = str(s)
+            self._label = '%s' % (s, )
         else:
             self._label = None
         self.pchanged()
@@ -94,7 +93,7 @@ class Container(tuple):
         Fire an event when property changed, calling all of the
         registered callbacks.
         """
-        for oid, func in list(self._propobservers.items()):
+        for oid, func in list(six.iteritems(self._propobservers)):
             func(self)
 
     def get_children(self):
@@ -175,17 +174,10 @@ class StemContainer(Container):
 
     baseline : :class:`~matplotlib.lines.Line2D`
         The artist of the horizontal baseline.
+
     """
+
     def __init__(self, markerline_stemlines_baseline, **kwargs):
-        """
-        Parameters
-        ----------
-        markerline_stemlines_baseline : tuple
-            Tuple of ``(markerline, stemlines, baseline)``.
-            ``markerline`` contains the `LineCollection` of the markers,
-            ``stemlines`` is a `LineCollection` of the main lines,
-            ``baseline`` is the `Line2D` of the baseline.
-        """
         markerline, stemlines, baseline = markerline_stemlines_baseline
         self.markerline = markerline
         self.stemlines = stemlines

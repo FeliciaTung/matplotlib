@@ -137,9 +137,9 @@ fig, ax_lst = plt.subplots(2, 2)  # a figure with a 2x2 grid of Axes
 # For example, to convert a `pandas.DataFrame` ::
 #
 #   a = pandas.DataFrame(np.random.rand(4,5), columns = list('abcde'))
-#   a_asarray = a.values
+#   a_asndarray = a.values
 #
-# and to convert a `np.matrix` ::
+# and to covert a `np.matrix` ::
 #
 #   b = np.matrix([[1,2],[3,4]])
 #   b_asarray = np.asarray(b)
@@ -184,8 +184,7 @@ plt.show()
 # :mod:`pylab` is a convenience module that bulk imports
 # :mod:`matplotlib.pyplot` (for plotting) and :mod:`numpy`
 # (for mathematics and working with arrays) in a single name space.
-# pylab is deprecated and its use is strongly discouraged because
-# of namespace pollution. Use pyplot instead.
+# Although many examples use :mod:`pylab`, it is no longer recommended.
 #
 # For non-interactive plotting it is suggested
 # to use pyplot to create the figures and then the OO interface for
@@ -221,7 +220,8 @@ plt.show()
 
 x = np.arange(0, 10, 0.2)
 y = np.sin(x)
-fig, ax = plt.subplots()
+fig = plt.figure()
+ax = fig.add_subplot(111)
 ax.plot(x, y)
 plt.show()
 
@@ -284,9 +284,6 @@ my_plotter(ax2, data3, data4, {'marker': 'o'})
 # Again, for these simple examples this style seems like overkill, however
 # once the graphs get slightly more complex it pays off.
 #
-#
-# .. _backends:
-#
 # Backends
 # ========
 #
@@ -299,13 +296,11 @@ my_plotter(ax2, data3, data4, {'marker': 'o'})
 # to the "backend" and many new users are confused by this term.
 # matplotlib targets many different use cases and output formats.  Some
 # people use matplotlib interactively from the python shell and have
-# plotting windows pop up when they type commands.  Some people run
-# `Jupyter <https://jupyter.org>`_ notebooks and draw inline plots for
-# quick data analysis. Others embed matplotlib into graphical user
-# interfaces like wxpython or pygtk to build rich applications.  Some
-# people use matplotlib in batch scripts to generate postscript images
-# from numerical simulations, and still others run web application
-# servers to dynamically serve up graphs.
+# plotting windows pop up when they type commands.  Some people embed
+# matplotlib into graphical user interfaces like wxpython or pygtk to
+# build rich applications.  Others use matplotlib in batch scripts to
+# generate postscript images from some numerical simulations, and still
+# others in web application servers to dynamically serve up graphs.
 #
 # To support all of these use cases, matplotlib can target different
 # outputs, and each of these capabilities is called a backend; the
@@ -322,7 +317,7 @@ my_plotter(ax2, data3, data4, {'marker': 'o'})
 #
 #
 # #. The ``backend`` parameter in your ``matplotlibrc`` file (see
-#    :doc:`/tutorials/introductory/customizing`)::
+#    :ref:`sphx_glr_tutorials_introductory_customizing.py`)::
 #
 #        backend : WXAgg   # use wxpython with antigrain (agg) rendering
 #
@@ -392,7 +387,7 @@ my_plotter(ax2, data3, data4, {'marker': 'o'})
 # DPI setting.
 #
 # Here is a summary of the matplotlib renderers (there is an eponymous
-# backend for each; these are *non-interactive backends*, capable of
+# backed for each; these are *non-interactive backends*, capable of
 # writing to a file):
 #
 # =============   ============   ================================================
@@ -451,6 +446,8 @@ my_plotter(ax2, data3, data4, {'marker': 'o'})
 # .. _`Portable Document Format`: https://en.wikipedia.org/wiki/Portable_Document_Format
 # .. _`Scalable Vector Graphics`: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 # .. _`Cairo graphics`: https://wwW.cairographics.org
+# .. _`Gimp Drawing Kit`: https://en.wikipedia.org/wiki/GDK
+# .. _PyGTK: http://www.pygtk.org
 # .. _PyGObject: https://wiki.gnome.org/action/show/Projects/PyGObject
 # .. _pycairo: https://www.cairographics.org/pycairo/
 # .. _cairocffi: https://pythonhosted.org/cairocffi/
@@ -482,8 +479,11 @@ my_plotter(ax2, data3, data4, {'marker': 'o'})
 # GTK and Cairo
 # -------------
 #
-# `GTK3` backends (*both* `GTK3Agg` and `GTK3Cairo`) depend on Cairo
-# (pycairo>=1.11.0 or cairocffi).
+# Both `GTK2` and `GTK3` have implicit dependencies on PyCairo regardless of the
+# specific Matplotlib backend used. Unfortunately the latest release of PyCairo
+# for Python3 does not implement the Python wrappers needed for the `GTK3Agg`
+# backend. `Cairocffi` can be used as a replacement which implements the correct
+# wrapper.
 #
 # How do I select PyQt4 or PySide?
 # --------------------------------
@@ -508,7 +508,7 @@ my_plotter(ax2, data3, data4, {'marker': 'o'})
 # that are called, and on a state variable that determines whether
 # matplotlib is in "interactive mode".  The default Boolean value is set
 # by the :file:`matplotlibrc` file, and may be customized like any other
-# configuration parameter (see :doc:`/tutorials/introductory/customizing`).  It
+# configuration parameter (see :ref:`sphx_glr_tutorials_introductory_customizing.py`).  It
 # may also be set via :func:`matplotlib.interactive`, and its
 # value may be queried via :func:`matplotlib.is_interactive`.  Turning
 # interactive mode on and off in the middle of a stream of plotting
@@ -603,18 +603,18 @@ my_plotter(ax2, data3, data4, {'marker': 'o'})
 # Prior to version 1.0, show() generally could not be called
 # more than once in a single script (although sometimes one
 # could get away with it); for version 1.0.1 and above, this
-# restriction is lifted, so one can write a script like this::
-#
-#     import numpy as np
-#     import matplotlib.pyplot as plt
-#
-#     plt.ioff()
-#     for i in range(3):
-#         plt.plot(np.random.rand(10))
-#         plt.show()
-#
-# which makes three plots, one at a time. I.e. the second plot will show up,
-# once the first plot is closed.
+# restriction is lifted, so one can write a script like this:
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+plt.ioff()
+for i in range(3):
+    plt.plot(np.random.rand(10))
+    plt.show()
+
+###############################################################################
+# which makes three plots, one at a time.
 #
 # Summary
 # -------
@@ -654,7 +654,7 @@ my_plotter(ax2, data3, data4, {'marker': 'o'})
 # controlled by the ``path.simplify`` and
 # ``path.simplify_threshold`` parameters in your
 # ``matplotlibrc`` file (see
-# :doc:`/tutorials/introductory/customizing` for
+# :ref:`sphx_glr_tutorials_introductory_customizing.py` for
 # more information about the ``matplotlibrc`` file).
 # The ``path.simplify`` parameter is a boolean indicating whether
 # or not line segments are simplified at all. The
@@ -691,7 +691,7 @@ my_plotter(ax2, data3, data4, {'marker': 'o'})
 # interactive plotting (with maximal simplification) and another
 # style for publication quality plotting (with minimal
 # simplification) and activate them as necessary. See
-# :doc:`/tutorials/introductory/customizing` for
+# :ref:`sphx_glr_tutorials_introductory_customizing.py` for
 # instructions on how to perform these actions.
 #
 # The simplification works by iteratively merging line segments
@@ -722,7 +722,7 @@ my_plotter(ax2, data3, data4, {'marker': 'o'})
 #
 # The markevery argument allows for naive subsampling, or an
 # attempt at evenly spaced (along the *x* axis) sampling. See the
-# :doc:`/gallery/lines_bars_and_markers/markevery_demo`
+# :ref:`sphx_glr_gallery_lines_bars_and_markers_markevery_demo.py`
 # for more information.
 #
 # Splitting lines into smaller chunks
@@ -762,14 +762,6 @@ my_plotter(ax2, data3, data4, {'marker': 'o'})
 #   mpl.rcParams['agg.path.chunksize'] = 10000
 #   plt.plot(y)
 #   plt.show()
-#
-# Legends
-# -------
-#
-# The default legend behavior for axes attempts to find the location
-# that covers the fewest data points (`loc='best'`). This can be a
-# very expensive computation if there are lots of data points. In
-# this case, you may want to provide a specific location.
 #
 # Using the *fast* style
 # ----------------------

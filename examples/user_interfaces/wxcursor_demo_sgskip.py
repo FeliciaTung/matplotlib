@@ -6,8 +6,9 @@ WXcursor Demo
 Example to draw a cursor and report the data coords in wx.
 """
 
+
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-from matplotlib.backends.backend_wx import NavigationToolbar2Wx
+from matplotlib.backends.backend_wx import NavigationToolbar2Wx, wxc
 from matplotlib.figure import Figure
 import numpy as np
 
@@ -16,7 +17,10 @@ import wx
 
 class CanvasFrame(wx.Frame):
     def __init__(self, ):
-        wx.Frame.__init__(self, None, -1, 'CanvasFrame', size=(550, 350))
+        wx.Frame.__init__(self, None, -1,
+                          'CanvasFrame', size=(550, 350))
+
+        self.SetBackgroundColour(wxc.NamedColour("WHITE"))
 
         self.figure = Figure()
         self.axes = self.figure.add_subplot(111)
@@ -29,8 +33,7 @@ class CanvasFrame(wx.Frame):
         self.figure_canvas = FigureCanvas(self, -1, self.figure)
 
         # Note that event is a MplEvent
-        self.figure_canvas.mpl_connect(
-            'motion_notify_event', self.UpdateStatusBar)
+        self.figure_canvas.mpl_connect('motion_notify_event', self.UpdateStatusBar)
         self.figure_canvas.Bind(wx.EVT_ENTER_WINDOW, self.ChangeCursor)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
@@ -46,12 +49,14 @@ class CanvasFrame(wx.Frame):
         self.toolbar.Show()
 
     def ChangeCursor(self, event):
-        self.figure_canvas.SetCursor(wx.Cursor(wx.CURSOR_BULLSEYE))
+        self.figure_canvas.SetCursor(wxc.StockCursor(wx.CURSOR_BULLSEYE))
 
     def UpdateStatusBar(self, event):
         if event.inaxes:
-            self.statusBar.SetStatusText(
-                "x={}  y={}".format(event.xdata, event.ydata))
+            x, y = event.xdata, event.ydata
+            self.statusBar.SetStatusText(("x= " + str(x) +
+                                          "  y=" + str(y)),
+                                         0)
 
 
 class App(wx.App):
@@ -61,7 +66,6 @@ class App(wx.App):
         self.SetTopWindow(frame)
         frame.Show(True)
         return True
-
 
 if __name__ == '__main__':
     app = App(0)

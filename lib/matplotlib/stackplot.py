@@ -6,16 +6,18 @@ http://stackoverflow.com/questions/2225995/how-can-i-create-stacked-line-graph-w
 (http://stackoverflow.com/users/66549/doug)
 
 """
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
+from cycler import cycler
 import numpy as np
 
 __all__ = ['stackplot']
 
 
-def stackplot(axes, x, *args,
-              labels=(), colors=None, baseline='zero',
-              **kwargs):
+def stackplot(axes, x, *args, **kwargs):
     """
-    Draw a stacked area plot.
+    Draws a stacked area plot.
 
     Parameters
     ----------
@@ -29,7 +31,7 @@ def stackplot(axes, x, *args,
             stackplot(x, y)               # where y is MxN
             stackplot(x, y1, y2, y3, y4)  # where y1, y2, y3, y4, are all 1xNm
 
-    baseline : {'zero', 'sym', 'wiggle', 'weighted_wiggle'}
+    baseline : ['zero' | 'sym' | 'wiggle' | 'weighted_wiggle']
         Method used to calculate the baseline:
 
         - ``'zero'``: Constant zero baseline, i.e. a simple stacked plot.
@@ -47,23 +49,26 @@ def stackplot(axes, x, *args,
         A list or tuple of colors. These will be cycled through and used to
         colour the stacked areas.
 
-    **kwargs
+    **kwargs :
         All other keyword arguments are passed to `Axes.fill_between()`.
 
 
     Returns
     -------
-    list : list of `.PolyCollection`
+    list of `.PolyCollection`
         A list of `.PolyCollection` instances, one for each element in the
         stacked area plot.
     """
 
     y = np.row_stack(args)
 
-    labels = iter(labels)
-    if colors is not None:
-        axes.set_prop_cycle(color=colors)
+    labels = iter(kwargs.pop('labels', []))
 
+    colors = kwargs.pop('colors', None)
+    if colors is not None:
+        axes.set_prop_cycle(cycler('color', colors))
+
+    baseline = kwargs.pop('baseline', 'zero')
     # Assume data passed has not been 'stacked', so stack it here.
     # We'll need a float buffer for the upcoming calculations.
     stack = np.cumsum(y, axis=0, dtype=np.promote_types(y.dtype, np.float32))
@@ -82,6 +87,7 @@ def stackplot(axes, x, *args,
         stack += first_line
 
     elif baseline == 'weighted_wiggle':
+        m, n = y.shape
         total = np.sum(y, 0)
         # multiply by 1/total (or zero) to avoid infinities in the division:
         inv_total = np.zeros_like(total)

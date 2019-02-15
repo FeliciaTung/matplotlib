@@ -1,3 +1,7 @@
+from __future__ import absolute_import, division, print_function
+
+import six
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.testing.decorators import image_comparison
@@ -166,7 +170,7 @@ def test_auto_column():
     tb3.auto_set_column_width(0)
     tb3.auto_set_column_width(1)
 
-    #4 non integer iterable input
+    #4 non integer interable input
     ax4 = fig.add_subplot(4, 1, 4)
     ax4.axis('off')
     tb4 = ax4.table(cellText=[['Fit Text', 2],
@@ -190,8 +194,3 @@ def test_table_cells():
     cell2 = CustomCell((0, 0), 1, 2, visible_edges=None)
     table[2, 1] = cell2
     assert table[2, 1] is cell2
-
-    # make sure gettitem support has not broken
-    # properties and setp
-    table.properties()
-    plt.setp(table)

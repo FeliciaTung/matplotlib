@@ -6,7 +6,7 @@
  * class without specifying a triangles array.
  */
 #include "Python.h"
-#include "numpy/ndarrayobject.h"
+#include "numpy/noprefix.h"
 #include "libqhull/qhull_a.h"
 #include <stdio.h>
 

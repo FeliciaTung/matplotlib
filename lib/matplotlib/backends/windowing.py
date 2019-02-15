@@ -5,29 +5,23 @@ With rcParams['tk.window_focus'] default of False, it is
 effectively disabled.
 
 It uses a tiny C++ extension module to access MS Win functions.
-
-This module is deprecated and will be removed in version 3.2
 """
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
-from matplotlib import rcParams, cbook
+import six
 
-cbook.warn_deprecated('3.0', obj_type='module', name='backends.windowing')
+from matplotlib import rcParams
 
 try:
     if not rcParams['tk.window_focus']:
         raise ImportError
-    from matplotlib.backends._tkagg import (
-        Win32_GetForegroundWindow as GetForegroundWindow,
-        Win32_SetForegroundWindow as SetForegroundWindow)
-
+    from matplotlib._windowing import GetForegroundWindow, SetForegroundWindow
 except ImportError:
-
     def GetForegroundWindow():
         return 0
-
     def SetForegroundWindow(hwnd):
         pass
-
 
 class FocusManager(object):
     def __init__(self):

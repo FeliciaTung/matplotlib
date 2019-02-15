@@ -1,11 +1,11 @@
+import datetime
 from unittest.mock import MagicMock
 
+from matplotlib.cbook import iterable
 import matplotlib.pyplot as plt
 from matplotlib.testing.decorators import image_comparison
 import matplotlib.units as munits
 import numpy as np
-import platform
-import pytest
 
 
 # Basic class that wraps numpy array and has units
@@ -28,7 +28,7 @@ class Quantity(object):
         return getattr(self.magnitude, attr)
 
     def __getitem__(self, item):
-        if np.iterable(self.magnitude):
+        if iterable(self.magnitude):
             return Quantity(self.magnitude[item], self.units)
         else:
             return Quantity(self.magnitude, self.units)
@@ -37,8 +37,11 @@ class Quantity(object):
         return np.asarray(self.magnitude)
 
 
-@pytest.fixture
-def quantity_converter():
+# Tests that the conversion machinery works properly for classes that
+# work as a facade over numpy arrays (like pint)
+@image_comparison(baseline_images=['plot_pint'],
+                  extensions=['png'], remove_text=False, style='mpl20')
+def test_numpy_facade():
     # Create an instance of the conversion interface and
     # mock so we can check methods called
     qc = munits.ConversionInterface()
@@ -46,7 +49,7 @@ def quantity_converter():
     def convert(value, unit, axis):
         if hasattr(value, 'units'):
             return value.to(unit).magnitude
-        elif np.iterable(value):
+        elif iterable(value):
             try:
                 return [v.to(unit).magnitude for v in value]
             except AttributeError:
@@ -55,29 +58,12 @@ def quantity_converter():
         else:
             return Quantity(value, axis.get_units()).to(unit).magnitude
 
-    def default_units(value, axis):
-        if hasattr(value, 'units'):
-            return value.units
-        elif np.iterable(value):
-            for v in value:
-                if hasattr(v, 'units'):
-                    return v.units
-            return None
-
     qc.convert = MagicMock(side_effect=convert)
     qc.axisinfo = MagicMock(side_effect=lambda u, a: munits.AxisInfo(label=u))
-    qc.default_units = MagicMock(side_effect=default_units)
-    return qc
+    qc.default_units = MagicMock(side_effect=lambda x, a: x.units)
 
-
-# Tests that the conversion machinery works properly for classes that
-# work as a facade over numpy arrays (like pint)
-@image_comparison(baseline_images=['plot_pint'],
-                  tol={'aarch64': 0.02}.get(platform.machine(), 0.0),
-                  extensions=['png'], remove_text=False, style='mpl20')
-def test_numpy_facade(quantity_converter):
     # Register the class
-    munits.registry[Quantity] = quantity_converter
+    munits.registry[Quantity] = qc
 
     # Simple test
     y = Quantity(np.linspace(0, 30), 'miles')
@@ -91,14 +77,13 @@ def test_numpy_facade(quantity_converter):
     ax.yaxis.set_units('inches')
     ax.xaxis.set_units('seconds')
 
-    assert quantity_converter.convert.called
-    assert quantity_converter.axisinfo.called
-    assert quantity_converter.default_units.called
+    assert qc.convert.called
+    assert qc.axisinfo.called
+    assert qc.default_units.called
 
 
 # Tests gh-8908
 @image_comparison(baseline_images=['plot_masked_units'],
-                  tol={'aarch64': 0.02}.get(platform.machine(), 0.0),
                   extensions=['png'], remove_text=True, style='mpl20')
 def test_plot_masked_units():
     data = np.linspace(-5, 5)
@@ -107,15 +92,6 @@ def test_plot_masked_units():
 
     fig, ax = plt.subplots()
     ax.plot(data_masked_units)
-
-
-def test_empty_set_limits_with_units(quantity_converter):
-    # Register the class
-    munits.registry[Quantity] = quantity_converter
-
-    fig, ax = plt.subplots()
-    ax.set_xlim(Quantity(-1, 'meters'), Quantity(6, 'meters'))
-    ax.set_ylim(Quantity(-1, 'hours'), Quantity(16, 'hours'))
 
 
 @image_comparison(baseline_images=['jpl_bar_units'], extensions=['png'],
@@ -150,8 +126,3 @@ def test_jpl_barh_units():
     fig, ax = plt.subplots()
     ax.barh(x, w, left=b)
     ax.set_xlim([b-1*day, b+w[-1]+1*day])
-
-
-def test_empty_arrays():
-    # Check that plotting an empty array with a dtype works
-    plt.scatter(np.array([], dtype='datetime64[ns]'), np.array([]))

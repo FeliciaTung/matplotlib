@@ -1,6 +1,10 @@
-*******************
-``matplotlib.path``
-*******************
+****
+path
+****
+
+
+:mod:`matplotlib.path`
+=======================
 
 .. automodule:: matplotlib.path
    :members:

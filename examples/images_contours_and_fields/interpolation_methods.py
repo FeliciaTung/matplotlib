@@ -3,17 +3,16 @@
 Interpolations for imshow/matshow
 =================================
 
-This example displays the difference between interpolation methods for
-:meth:`~.axes.Axes.imshow` and :meth:`~.axes.Axes.matshow`.
+This example displays the difference between interpolation methods for imshow
+and matshow.
 
-If `interpolation` is None, it defaults to the ``image.interpolation``
-:doc:`rc parameter </tutorials/introductory/customizing>`.
-If the interpolation is ``'none'``, then no interpolation is performed
-for the Agg, ps and pdf backends. Other backends will default to ``'nearest'``.
+If `interpolation` is None, it defaults to the rc image.interpolation
+parameter. If the interpolation is `none`, then no interpolation is performed
+for the Agg, ps and pdf backends. Other backends will default to 'nearest'.
 
-For the Agg, ps and pdf backends, ``interpolation = 'none'`` works well when a
-big image is scaled down, while ``interpolation = 'nearest'`` works well when
-a small image is scaled up.
+For the Agg, ps and pdf backends, interpolation = 'none' works well when a big
+image is scaled down, while interpolation = 'nearest' works well when a small
+image is scaled up.
 """
 
 import matplotlib.pyplot as plt
@@ -28,26 +27,13 @@ np.random.seed(19680801)
 
 grid = np.random.rand(4, 4)
 
-fig, axs = plt.subplots(nrows=3, ncols=6, figsize=(9, 6),
-                        subplot_kw={'xticks': [], 'yticks': []})
+fig, axes = plt.subplots(3, 6, figsize=(12, 6),
+                         subplot_kw={'xticks': [], 'yticks': []})
 
-for ax, interp_method in zip(axs.flat, methods):
+fig.subplots_adjust(hspace=0.3, wspace=0.05)
+
+for ax, interp_method in zip(axes.flat, methods):
     ax.imshow(grid, interpolation=interp_method, cmap='viridis')
-    ax.set_title(str(interp_method))
+    ax.set_title(interp_method)
 
-plt.tight_layout()
 plt.show()
-
-#############################################################################
-#
-# ------------
-#
-# References
-# """"""""""
-#
-# The use of the following functions and methods is shown
-# in this example:
-
-import matplotlib
-matplotlib.axes.Axes.imshow
-matplotlib.pyplot.imshow

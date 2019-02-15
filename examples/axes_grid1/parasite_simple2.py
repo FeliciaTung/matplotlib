@@ -44,4 +44,5 @@ ax_kms.set_xlim(950, 3700)
 ax_kms.set_ylim(950, 3100)
 # xlim and ylim of ax_pms will be automatically adjusted.
 
+plt.draw()
 plt.show()

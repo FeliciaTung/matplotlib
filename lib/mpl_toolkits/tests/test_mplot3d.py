@@ -2,10 +2,8 @@ import pytest
 
 from mpl_toolkits.mplot3d import Axes3D, axes3d, proj3d, art3d
 from matplotlib import cm
-from matplotlib import path as mpath
-from matplotlib.testing.decorators import image_comparison, check_figures_equal
-from matplotlib.cbook.deprecation import MatplotlibDeprecationWarning
-from matplotlib.collections import LineCollection, PolyCollection
+from matplotlib.testing.decorators import image_comparison
+from matplotlib.collections import LineCollection
 from matplotlib.patches import Circle
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,7 +18,7 @@ def test_bar3d():
         ys = np.arange(20)
         cs = [c] * len(xs)
         cs[0] = 'c'
-        ax.bar(xs, ys, zs=z, zdir='y', align='edge', color=cs, alpha=0.8)
+        ax.bar(xs, ys, zs=z, zdir='y', color=cs, alpha=0.8)
 
 
 @image_comparison(
@@ -29,21 +27,14 @@ def test_bar3d():
     extensions=['png']
 )
 def test_bar3d_shaded():
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
     x = np.arange(4)
     y = np.arange(5)
     x2d, y2d = np.meshgrid(x, y)
     x2d, y2d = x2d.ravel(), y2d.ravel()
     z = x2d + y2d
-
-    views = [(-60, 30), (30, 30), (30, -30), (120, -30)]
-    fig = plt.figure(figsize=plt.figaspect(1 / len(views)))
-    axs = fig.subplots(
-        1, len(views),
-        subplot_kw=dict(projection='3d')
-    )
-    for ax, (azim, elev) in zip(axs, views):
-        ax.bar3d(x2d, y2d, x2d * 0, 1, 1, z, shade=True)
-        ax.view_init(azim=azim, elev=elev)
+    ax.bar3d(x2d, y2d, x2d * 0, 1, 1, z, shade=True)
     fig.canvas.draw()
 
 
@@ -64,8 +55,7 @@ def test_bar3d_notshaded():
     fig.canvas.draw()
 
 
-@image_comparison(baseline_images=['contour3d'],
-                  remove_text=True, style='mpl20')
+@image_comparison(baseline_images=['contour3d'], remove_text=True)
 def test_contour3d():
     fig = plt.figure()
     ax = fig.gca(projection='3d')
@@ -135,13 +125,14 @@ def test_lines3d():
 
 
 # Reason for flakiness of SVG test is still unknown.
-@image_comparison(
-    baseline_images=['mixedsubplot'], remove_text=True,
-    extensions=['png', 'pdf',
-                pytest.param('svg', marks=pytest.mark.xfail(strict=False))])
+@image_comparison(baseline_images=['mixedsubplot'], remove_text=True,
+                  extensions=['png', 'pdf',
+                              pytest.mark.xfail('svg', strict=False)])
 def test_mixedsubplots():
     def f(t):
-        return np.cos(2*np.pi*t) * np.exp(-t)
+        s1 = np.cos(2*np.pi*t)
+        e1 = np.exp(-t)
+        return np.multiply(s1, e1)
 
     t1 = np.arange(0.0, 5.0, 0.1)
     t2 = np.arange(0.0, 5.0, 0.02)
@@ -154,26 +145,13 @@ def test_mixedsubplots():
 
     ax = fig.add_subplot(2, 1, 2, projection='3d')
     X, Y = np.meshgrid(np.arange(-5, 5, 0.25), np.arange(-5, 5, 0.25))
-    R = np.hypot(X, Y)
+    R = np.sqrt(X ** 2 + Y ** 2)
     Z = np.sin(R)
 
     surf = ax.plot_surface(X, Y, Z, rcount=40, ccount=40,
                            linewidth=0, antialiased=False)
 
     ax.set_zlim3d(-1, 1)
-
-
-@check_figures_equal(extensions=['png'])
-def test_tight_layout_text(fig_test, fig_ref):
-    # text is currently ignored in tight layout. So the order of text() and
-    # tight_layout() calls should not influence the result.
-    ax1 = fig_test.gca(projection='3d')
-    ax1.text(.5, .5, .5, s='some string')
-    fig_test.tight_layout()
-
-    ax2 = fig_ref.gca(projection='3d')
-    fig_ref.tight_layout()
-    ax2.text(.5, .5, .5, s='some string')
 
 
 @image_comparison(baseline_images=['scatter3d'], remove_text=True)
@@ -215,27 +193,12 @@ def test_surface3d():
     X = np.arange(-5, 5, 0.25)
     Y = np.arange(-5, 5, 0.25)
     X, Y = np.meshgrid(X, Y)
-    R = np.hypot(X, Y)
+    R = np.sqrt(X ** 2 + Y ** 2)
     Z = np.sin(R)
     surf = ax.plot_surface(X, Y, Z, rcount=40, ccount=40, cmap=cm.coolwarm,
                            lw=0, antialiased=False)
     ax.set_zlim(-1.01, 1.01)
     fig.colorbar(surf, shrink=0.5, aspect=5)
-
-
-@image_comparison(baseline_images=['surface3d_shaded'], remove_text=True,
-                  extensions=['png'])
-def test_surface3d_shaded():
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
-    X = np.arange(-5, 5, 0.25)
-    Y = np.arange(-5, 5, 0.25)
-    X, Y = np.meshgrid(X, Y)
-    R = np.sqrt(X ** 2 + Y ** 2)
-    Z = np.sin(R)
-    surf = ax.plot_surface(X, Y, Z, rstride=5, cstride=5,
-                           color=[0.25, 1, 0.25], lw=1, antialiased=False)
-    ax.set_zlim(-1.01, 1.01)
 
 
 @image_comparison(baseline_images=['text3d'])
@@ -357,7 +320,6 @@ def test_quiver3d():
 
     ax.quiver(x, y, z, u, v, w, length=0.1, pivot='tip', normalize=True)
 
-
 @image_comparison(baseline_images=['quiver3d_empty'], remove_text=True)
 def test_quiver3d_empty():
     fig = plt.figure()
@@ -371,7 +333,6 @@ def test_quiver3d_empty():
             np.sin(np.pi * z))
 
     ax.quiver(x, y, z, u, v, w, length=0.1, pivot='tip', normalize=True)
-
 
 @image_comparison(baseline_images=['quiver3d_masked'], remove_text=True)
 def test_quiver3d_masked():
@@ -391,7 +352,6 @@ def test_quiver3d_masked():
 
     ax.quiver(x, y, z, u, v, w, length=0.1, pivot='tip', normalize=True)
 
-
 @image_comparison(baseline_images=['quiver3d_pivot_middle'], remove_text=True,
                   extensions=['png'])
 def test_quiver3d_pivot_middle():
@@ -406,7 +366,6 @@ def test_quiver3d_pivot_middle():
             np.sin(np.pi * z))
 
     ax.quiver(x, y, z, u, v, w, length=0.1, pivot='middle', normalize=True)
-
 
 @image_comparison(baseline_images=['quiver3d_pivot_tail'], remove_text=True,
                   extensions=['png'])
@@ -440,13 +399,6 @@ def test_poly3dcollection_closed():
     ax.add_collection3d(c2)
 
 
-def test_poly_collection_2d_to_3d_empty():
-    poly = PolyCollection([])
-    art3d.poly_collection_2d_to_3d(poly)
-    assert isinstance(poly, art3d.Poly3DCollection)
-    assert poly.get_paths() == []
-
-
 @image_comparison(baseline_images=['axes3d_labelpad'], extensions=['png'])
 def test_axes3d_labelpad():
     from matplotlib import rcParams
@@ -473,10 +425,9 @@ def test_axes3d_labelpad():
 def test_axes3d_cla():
     # fixed in pull request 4553
     fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1, projection='3d')
+    ax = fig.add_subplot(1,1,1, projection='3d')
     ax.set_axis_off()
     ax.cla()  # make sure the axis displayed is 3D (not 2D)
-
 
 def test_plotsurface_1d_raises():
     x = np.linspace(0.5, 10, num=100)
@@ -484,7 +435,7 @@ def test_plotsurface_1d_raises():
     X, Y = np.meshgrid(x, y)
     z = np.random.randn(100)
 
-    fig = plt.figure(figsize=(14, 6))
+    fig = plt.figure(figsize=(14,6))
     ax = fig.add_subplot(1, 2, 1, projection='3d')
     with pytest.raises(ValueError):
         ax.plot_surface(X, Y, z)
@@ -583,7 +534,6 @@ def test_proj_axes_cube_ortho():
     ax.set_xlim(-200, 200)
     ax.set_ylim(-200, 200)
 
-
 def test_rot():
     V = [1, 0, 0, 1]
     rotated_V = proj3d.rot_x(V, np.pi / 6)
@@ -620,8 +570,8 @@ def test_lines_dists():
     ys = (100, 150, 30, 200)
     ax.scatter(xs, ys)
 
-    dist = proj3d._line2d_seg_dist(p0, p1, (xs[0], ys[0]))
-    dist = proj3d._line2d_seg_dist(p0, p1, np.array((xs, ys)))
+    dist = proj3d.line2d_seg_dist(p0, p1, (xs[0], ys[0]))
+    dist = proj3d.line2d_seg_dist(p0, p1, np.array((xs, ys)))
     for x, y, d in zip(xs, ys, dist):
         c = Circle((x, y), d, fill=0)
         ax.add_patch(c)
@@ -706,7 +656,8 @@ class TestVoxels(object):
         x, y, z = np.indices((10, 10, 10))
         voxels = (x == y) | (y == z)
         voxels = voxels & ~(x * y * z < 1)
-        colors = np.full((10, 10, 10), 'C0', dtype=np.object_)
+        colors = np.zeros((10, 10, 10), dtype=np.object_)
+        colors.fill('C0')
         colors[(x < 5) & (y < 5)] = '0.25'
         colors[(x + z) < 10] = 'cyan'
         ax.voxels(voxels, facecolors=colors)
@@ -723,9 +674,9 @@ class TestVoxels(object):
         x, y, z = np.indices((10, 10, 10))
         voxels = (x == y) | (y == z)
         colors = np.zeros((10, 10, 10, 3))
-        colors[..., 0] = x / 9
-        colors[..., 1] = y / 9
-        colors[..., 2] = z / 9
+        colors[...,0] = x/9.0
+        colors[...,1] = y/9.0
+        colors[...,2] = z/9.0
         ax.voxels(voxels, facecolors=colors)
 
     @image_comparison(
@@ -808,22 +759,10 @@ class TestVoxels(object):
         with pytest.raises(TypeError) as exc:
             ax.voxels(x, y)
         exc.match(".*voxels.*")
-        # x, y, z are positional only - this passes them on as attributes of
+        # x,y,z are positional only - this passes them on as attributes of
         # Poly3DCollection
         with pytest.raises(AttributeError):
             ax.voxels(filled=filled, x=x, y=y, z=z)
-
-
-def test_line3d_set_get_data_3d():
-    x, y, z = [0, 1], [2, 3], [4, 5]
-    x2, y2, z2 = [6, 7], [8, 9], [10, 11]
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    lines = ax.plot(x, y, z)
-    line = lines[0]
-    np.testing.assert_array_equal((x, y, z), line.get_data_3d())
-    line.set_data_3d(x2, y2, z2)
-    np.testing.assert_array_equal((x2, y2, z2), line.get_data_3d())
 
 
 def test_inverted_cla():
@@ -844,58 +783,3 @@ def test_inverted_cla():
     assert not ax.xaxis_inverted()
     assert not ax.yaxis_inverted()
     assert not ax.zaxis_inverted()
-
-
-def test_art3d_deprecated():
-
-    with pytest.warns(MatplotlibDeprecationWarning):
-        art3d.norm_angle(0.0)
-
-    with pytest.warns(MatplotlibDeprecationWarning):
-        art3d.norm_text_angle(0.0)
-
-    path = mpath.Path(np.empty((0, 2)))
-
-    with pytest.warns(MatplotlibDeprecationWarning):
-        art3d.path_to_3d_segment(path)
-
-    with pytest.warns(MatplotlibDeprecationWarning):
-        art3d.paths_to_3d_segments([path])
-
-    with pytest.warns(MatplotlibDeprecationWarning):
-        art3d.path_to_3d_segment_with_codes(path)
-
-    with pytest.warns(MatplotlibDeprecationWarning):
-        art3d.paths_to_3d_segments_with_codes([path])
-
-    with pytest.warns(MatplotlibDeprecationWarning):
-        art3d.get_colors([], 1)
-
-    with pytest.warns(MatplotlibDeprecationWarning):
-        art3d.zalpha([], [])
-
-
-def test_proj3d_deprecated():
-    with pytest.warns(MatplotlibDeprecationWarning):
-        proj3d.line2d([0, 1], [0, 1])
-
-    with pytest.warns(MatplotlibDeprecationWarning):
-        proj3d.line2d_dist([0, 1, 3], [0, 1])
-
-    with pytest.warns(MatplotlibDeprecationWarning):
-        proj3d.mod([1, 1, 1])
-
-    vec = np.arange(4)
-    M = np.ones((4, 4))
-
-    with pytest.warns(MatplotlibDeprecationWarning):
-        proj3d.proj_transform_vec(vec, M)
-
-    with pytest.warns(MatplotlibDeprecationWarning):
-        proj3d.proj_transform_vec_clip(vec, M)
-
-    with pytest.warns(MatplotlibDeprecationWarning):
-        proj3d.vec_pad_ones(np.ones(3), np.ones(3), np.ones(3))
-
-    with pytest.warns(MatplotlibDeprecationWarning):
-        proj3d.proj_trans_clip_points(np.ones((4, 3)), M)

@@ -1,8 +1,12 @@
-import numpy as np
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
+import six
 
 from matplotlib.contour import ContourSet
 from matplotlib.tri.triangulation import Triangulation
 import matplotlib._tri as _tri
+import numpy as np
 
 
 class TriContourSet(ContourSet):
@@ -94,16 +98,19 @@ class TriContourSet(ContourSet):
 def tricontour(ax, *args, **kwargs):
     """
     Draw contours on an unstructured triangular grid.
+    :func:`~matplotlib.pyplot.tricontour` and
+    :func:`~matplotlib.pyplot.tricontourf` draw contour lines and
+    filled contours, respectively.  Except as noted, function
+    signatures and return values are the same for both versions.
 
-    `.tricontour` and `.tricontourf` draw contour lines and filled contours,
-    respectively.  Except as noted, function signatures and return values are
-    the same for both versions.
-
-    The triangulation can be specified in one of two ways; either ::
+    The triangulation can be specified in one of two ways; either::
 
         tricontour(triangulation, ...)
 
-    where *triangulation* is a `matplotlib.tri.Triangulation` object, or ::
+    where triangulation is a :class:`matplotlib.tri.Triangulation`
+    object, or
+
+    ::
 
         tricontour(x, y, ...)
         tricontour(x, y, triangles, ...)
@@ -111,21 +118,24 @@ def tricontour(ax, *args, **kwargs):
         tricontour(x, y, mask=mask, ...)
         tricontour(x, y, triangles, mask=mask, ...)
 
-    in which case a `.Triangulation` object will be created.  See that class'
-    docstring for an explanation of these cases.
+    in which case a Triangulation object will be created.  See
+    :class:`~matplotlib.tri.Triangulation` for a explanation of
+    these possibilities.
 
     The remaining arguments may be::
 
         tricontour(..., Z)
 
-    where *Z* is the array of values to contour, one per point in the
-    triangulation.  The level values are chosen automatically.
+    where *Z* is the array of values to contour, one per point
+    in the triangulation.  The level values are chosen
+    automatically.
 
     ::
 
         tricontour(..., Z, N)
 
-    contour up to *N+1* automatically chosen contour levels (*N* intervals).
+    contour up to *N+1* automatically chosen contour levels
+    (*N* intervals).
 
     ::
 
@@ -148,7 +158,8 @@ def tricontour(ax, *args, **kwargs):
     Use keyword args to control colors, linewidth, origin, cmap ... see
     below for more details.
 
-    `.tricontour(...)` returns a `~matplotlib.contour.TriContourSet` object.
+    ``C = tricontour(...)`` returns a
+    :class:`~matplotlib.contour.TriContourSet` object.
 
     Optional keyword arguments:
 
@@ -219,10 +230,12 @@ def tricontour(ax, *args, **kwargs):
         Override axis units by specifying an instance of a
         :class:`matplotlib.units.ConversionInterface`.
 
+
     tricontour-only keyword arguments:
 
         *linewidths*: [ *None* | number | tuple of numbers ]
-        If *linewidths* is *None*, defaults to rc:`lines.linewidth`.
+        If *linewidths* is *None*, the default width in
+        ``lines.linewidth`` in ``matplotlibrc`` is used.
 
         If a number, all levels will be plotted with this linewidth.
 
@@ -239,28 +252,32 @@ def tricontour(ax, *args, **kwargs):
 
         If contour is using a monochrome colormap and the contour
         level is less than 0, then the linestyle specified
-        in :rc:`contour.negative_linestyle` will be used.
+        in ``contour.negative_linestyle`` in ``matplotlibrc``
+        will be used.
 
     tricontourf-only keyword arguments:
 
         *antialiased*: bool
         enable antialiasing
 
-    Note: `.tricontourf` fills intervals that are closed at the top; that is,
-    for boundaries *z1* and *z2*, the filled region is::
+    Note: tricontourf fills intervals that are closed at the top; that
+    is, for boundaries *z1* and *z2*, the filled region is::
 
-        z1 < Z <= z2
+        z1 < z <= z2
 
-    except for the lowest interval, which is closed on both sides (i.e. it
-    includes the lowest value).
+    There is one exception: if the lowest boundary coincides with
+    the minimum value of the *z* array, then that minimum value
+    will be included in the lowest interval.
     """
+    if not ax._hold:
+        ax.cla()
     kwargs['filled'] = False
     return TriContourSet(ax, *args, **kwargs)
 
 
 def tricontourf(ax, *args, **kwargs):
+    if not ax._hold:
+        ax.cla()
     kwargs['filled'] = True
     return TriContourSet(ax, *args, **kwargs)
-
-
 tricontourf.__doc__ = tricontour.__doc__

@@ -7,9 +7,7 @@ Demonstrates making a 3D plot which has 2D bar graphs projected onto
 planes y=0, y=1, etc.
 """
 
-# This import registers the 3D projection, but is otherwise unused.
-from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
-
+from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import numpy as np
 

@@ -1,15 +1,18 @@
-**************************
-``matplotlib.projections``
-**************************
+***********
+projections
+***********
+
+
+:mod:`matplotlib.projections`
+=============================
 
 .. automodule:: matplotlib.projections
    :members:
    :show-inheritance:
 
 
-********************************
-``matplotlib.projections.polar``
-********************************
+:mod:`matplotlib.projections.polar`
+===================================
 
 .. automodule:: matplotlib.projections.polar
    :members:

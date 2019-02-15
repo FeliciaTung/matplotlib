@@ -3,10 +3,12 @@
 # lib/matplotlib/backends/web_backend/nbagg_uat.ipynb to help verify
 # that changes made maintain expected behaviour.
 
+import six
+
 from base64 import b64encode
 import io
 import json
-import pathlib
+import os
 import uuid
 
 from IPython.display import display, Javascript, HTML
@@ -17,7 +19,7 @@ except ImportError:
     # Jupyter/IPython 3.x or earlier
     from IPython.kernel.comm import Comm
 
-from matplotlib import is_interactive
+from matplotlib import rcParams, is_interactive
 from matplotlib._pylab_helpers import Gcf
 from matplotlib.backend_bases import (
     _Backend, FigureCanvasBase, NavigationToolbar2)
@@ -28,19 +30,19 @@ from matplotlib.backends.backend_webagg_core import (
 
 def connection_info():
     """
-    Return a string showing the figure and connection status for the backend.
+    Return a string showing the figure and connection status for
+    the backend. This is intended as a diagnostic tool, and not for general
+    use.
 
-    This is intended as a diagnostic tool, and not for general use.
     """
-    result = [
-        '{fig} - {socket}'.format(
-            fig=(manager.canvas.figure.get_label()
-                 or "Figure {}".format(manager.num)),
-            socket=manager.web_sockets)
-        for manager in Gcf.get_all_fig_managers()
-    ]
+    result = []
+    for manager in Gcf.get_all_fig_managers():
+        fig = manager.canvas.figure
+        result.append('{0} - {0}'.format((fig.get_label() or
+                                          "Figure {0}".format(manager.num)),
+                                         manager.web_sockets))
     if not is_interactive():
-        result.append('Figures pending show: {}'.format(len(Gcf._activeQue)))
+        result.append('Figures pending show: {0}'.format(len(Gcf._activeQue)))
     return '\n'.join(result)
 
 
@@ -111,9 +113,11 @@ class FigureManagerNbAgg(FigureManagerWebAgg):
         else:
             output = stream
         super().get_javascript(stream=output)
-        output.write((pathlib.Path(__file__).parent
-                      / "web_backend/js/nbagg_mpl.js")
-                     .read_text(encoding="utf-8"))
+        with io.open(os.path.join(
+                os.path.dirname(__file__),
+                "web_backend", 'js',
+                "nbagg_mpl.js"), encoding='utf8') as fd:
+            output.write(fd.read())
         if stream is None:
             return output.getvalue()
 
@@ -131,20 +135,19 @@ class FigureManagerNbAgg(FigureManagerWebAgg):
 
     def clearup_closed(self):
         """Clear up any closed Comms."""
-        self.web_sockets = {socket for socket in self.web_sockets
-                            if socket.is_open()}
+        self.web_sockets = set([socket for socket in self.web_sockets
+                                if socket.is_open()])
 
         if len(self.web_sockets) == 0:
             self.canvas.close_event()
 
     def remove_comm(self, comm_id):
-        self.web_sockets = {socket for socket in self.web_sockets
-                            if not socket.comm.comm_id == comm_id}
+        self.web_sockets = set([socket for socket in self.web_sockets
+                                if not socket.comm.comm_id == comm_id])
 
 
 class FigureCanvasNbAgg(FigureCanvasWebAggCore):
     def new_timer(self, *args, **kwargs):
-        # docstring inherited
         return TimerTornado(*args, **kwargs)
 
 
@@ -201,7 +204,9 @@ class CommSocket(object):
     def send_binary(self, blob):
         # The comm is ascii, so we always send the image in base64
         # encoded data URL form.
-        data = b64encode(blob).decode('ascii')
+        data = b64encode(blob)
+        if six.PY3:
+            data = data.decode('ascii')
         data_uri = "data:image/png;base64,{0}".format(data)
         self.comm.send({'data': data_uri})
 

@@ -1,7 +1,9 @@
-******************
-``matplotlib.tri``
-******************
+****************
+triangular grids
+****************
 
+:mod:`matplotlib.tri`
+=====================
 .. automodule:: matplotlib.tri
 
 .. autoclass:: matplotlib.tri.Triangulation

@@ -1,8 +1,11 @@
+from __future__ import absolute_import, division, print_function
+
+import six
+
 import numpy as np
 from io import BytesIO
 import os
 import tempfile
-import warnings
 import xml.parsers.expat
 
 import pytest
@@ -13,15 +16,14 @@ import matplotlib
 from matplotlib import dviread
 
 
-with warnings.catch_warnings():
-    warnings.simplefilter('ignore')
-    needs_usetex = pytest.mark.skipif(
-        not matplotlib.checkdep_usetex(True),
-        reason="This test needs a TeX installation")
+needs_usetex = pytest.mark.xfail(
+    not matplotlib.checkdep_usetex(True),
+    reason="This test needs a TeX installation")
 
 
 def test_visibility():
-    fig, ax = plt.subplots()
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
 
     x = np.linspace(0, 4 * np.pi, 50)
     y = np.sin(x)
@@ -129,7 +131,7 @@ def _test_determinism_save(filename, usetex):
     "filename, usetex",
     # unique filenames to allow for parallel testing
     [("determinism_notex.svg", False),
-     pytest.param("determinism_tex.svg", True, marks=needs_usetex)])
+     needs_usetex(("determinism_tex.svg", True))])
 def test_determinism(filename, usetex):
     import sys
     from subprocess import check_output, STDOUT, CalledProcessError
@@ -142,7 +144,7 @@ def test_determinism(filename, usetex):
                 [sys.executable, '-R', '-c',
                  'import matplotlib; '
                  'matplotlib._called_from_pytest = True; '
-                 'matplotlib.use("svg", force=True); '
+                 'matplotlib.use("svg"); '
                  'from matplotlib.tests.test_backend_svg '
                  'import _test_determinism_save;'
                  '_test_determinism_save(%r, %r)' % (filename, usetex)],

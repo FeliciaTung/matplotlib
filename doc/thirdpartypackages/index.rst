@@ -71,13 +71,6 @@ make up the plot.
 Specialty plots
 ***************
 
-Broken Axes
-===========
-`brokenaxes <https://github.com/bendichter/brokenaxes>`_ supplies an axes
-class that can have a visual break to indicate a discontinuous range.
-
-.. image:: /_static/brokenaxes.png
-
 DeCiDa
 ======
 
@@ -160,7 +153,6 @@ Windrose
 Numpy library to manage wind data, draw windroses (also known as polar rose
 plots), draw probability density functions and fit Weibull distributions.
 
-
 Interactivity
 *************
 
@@ -174,17 +166,6 @@ MplDataCursor
 `MplDataCursor <https://github.com/joferkington/mpldatacursor>`_ is a toolkit
 written by Joe Kington to provide interactive "data cursors" (clickable
 annotation boxes) for Matplotlib.
-
-animatplot
-==========
-`animatplot <https://animatplot.readthedocs.io/>`_ is a library for
-producing interactive animated plots with the goal of making production of
-animated plots almost as easy as static ones.
-
-.. image:: /_static/animatplot.png
-
-For an animated version of the above picture and more examples, see the
-`animatplot gallery. <https://animatplot.readthedocs.io/en/stable/gallery.html>`_
 
 Miscellaneous
 *************

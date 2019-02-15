@@ -1,6 +1,7 @@
-import builtins
+from __future__ import absolute_import, division, print_function
 
-import matplotlib
+import six
+import sys
 
 
 def test_simple():
@@ -21,6 +22,14 @@ def test_override_builtins():
         'sum',
         'divmod'
     }
+
+    # We could use six.moves.builtins here, but that seems
+    # to do a little more than just this.
+    if six.PY3:
+        builtins = sys.modules['builtins']
+    else:
+        builtins = sys.modules['__builtin__']
+
     overridden = False
     for key in dir(pylab):
         if key in dir(builtins):

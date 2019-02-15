@@ -1,7 +1,9 @@
-from io import BytesIO
+# -*- coding: utf-8 -*-
 
-from matplotlib import afm
-from matplotlib import font_manager as fm
+from __future__ import absolute_import, division, print_function
+from six import BytesIO
+
+import matplotlib.afm as afm
 
 
 AFM_TEST_DATA = b"""StartFontMetrics 2.0
@@ -31,7 +33,7 @@ EndFontMetrics
 def test_nonascii_str():
     # This tests that we also decode bytes as utf-8 properly.
     # Else, font files with non ascii characters fail to load.
-    inp_str = "привет"
+    inp_str = u"привет"
     byte_str = inp_str.encode("utf8")
 
     ret = afm._to_str(byte_str)
@@ -68,20 +70,14 @@ def test_parse_char_metrics():
          42: (1141.0, 'foo', [40, 60, 800, 360]),
          99: (583.0, 'bar', [40, -10, 543, 210]),
          },
-        {'space': (250.0, 'space', [0, 0, 0, 0]),
-         'foo': (1141.0, 'foo', [40, 60, 800, 360]),
-         'bar': (583.0, 'bar', [40, -10, 543, 210]),
+        {'space': (250.0, [0, 0, 0, 0]),
+         'foo': (1141.0, [40, 60, 800, 360]),
+         'bar': (583.0, [40, -10, 543, 210]),
          })
 
 
 def test_get_familyname_guessed():
     fh = BytesIO(AFM_TEST_DATA)
-    font = afm.AFM(fh)
-    del font._header[b'FamilyName']  # remove FamilyName, so we have to guess
-    assert font.get_familyname() == 'My Font'
-
-
-def test_font_manager_weight_normalization():
-    font = afm.AFM(BytesIO(
-        AFM_TEST_DATA.replace(b"Weight Bold\n", b"Weight Custom\n")))
-    assert fm.afmFontProperty("", font).weight == "normal"
+    fm = afm.AFM(fh)
+    del fm._header[b'FamilyName']  # remove FamilyName, so we have to guess
+    assert fm.get_familyname() == 'My Font'

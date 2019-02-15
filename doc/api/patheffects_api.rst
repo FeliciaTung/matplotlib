@@ -1,6 +1,10 @@
-**************************
-``matplotlib.patheffects``
-**************************
+***********
+patheffects
+***********
+
+
+:mod:`matplotlib.patheffects`
+=============================
 
 .. automodule:: matplotlib.patheffects
    :members:

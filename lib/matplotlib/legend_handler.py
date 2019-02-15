@@ -1,8 +1,8 @@
 """
 This module defines default legend handlers.
 
-It is strongly encouraged to have read the :doc:`legend guide
-</tutorials/intermediate/legend_guide>` before this documentation.
+It is strongly encouraged to have read the :ref:`legend guide
+<sphx_glr_tutorials_intermediate_legend_guide.py>` before this documentation.
 
 Legend handlers are expected to be a callable object with a following
 signature. ::
@@ -20,16 +20,20 @@ i.e., this is dpi-scaled value).
 This module includes definition of several legend handler classes
 derived from the base class (HandlerBase) with the following method::
 
-    def legend_artist(self, legend, orig_handle, fontsize, handlebox)
+    def legend_artist(self, legend, orig_handle, fontsize, handlebox):
 
 """
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
+import six
+from six.moves import zip
 from itertools import cycle
 
 import numpy as np
 
 from matplotlib.lines import Line2D
-from matplotlib.patches import Rectangle
+from matplotlib.patches import Rectangle, FancyArrowPatch
 import matplotlib.collections as mcoll
 import matplotlib.colors as mcolors
 
@@ -231,7 +235,7 @@ class HandlerLine2D(HandlerNpoints):
         xdata, xdata_marker = self.get_xdata(legend, xdescent, ydescent,
                                              width, height, fontsize)
 
-        ydata = np.full_like(xdata, ((height - ydescent) / 2))
+        ydata = ((height - ydescent) / 2.) * np.ones(xdata.shape, float)
         legline = Line2D(xdata, ydata)
 
         self.update_prop(legline, orig_handle, legend)
@@ -271,8 +275,8 @@ class HandlerPatch(HandlerBase):
                                xdescent=xdescent, ydescent=ydescent,
                                width=width, height=height, fontsize=fontsize)
 
-            Subsequently the created artist will have its ``update_prop``
-            method called and the appropriate transform will be applied.
+            Subsequently the created artist will have its ``update_prop`` method
+            called and the appropriate transform will be applied.
 
         Notes
         -----
@@ -374,7 +378,7 @@ class HandlerRegularPolyCollection(HandlerNpointsYoffsets):
         self._update_prop(legend_handle, orig_handle)
 
         legend_handle.set_figure(legend.figure)
-        # legend._set_artist_props(legend_handle)
+        #legend._set_artist_props(legend_handle)
         legend_handle.set_clip_box(None)
         legend_handle.set_clip_path(None)
 
@@ -499,8 +503,8 @@ class HandlerErrorbar(HandlerLine2D):
         handle_caplines = []
 
         if orig_handle.has_xerr:
-            verts = [((x - xerr_size, y), (x + xerr_size, y))
-                     for x, y in zip(xdata_marker, ydata_marker)]
+            verts = [ ((x - xerr_size, y), (x + xerr_size, y))
+                      for x, y in zip(xdata_marker, ydata_marker)]
             coll = mcoll.LineCollection(verts)
             self.update_prop(coll, barlinecols[0], legend)
             handle_barlinecols.append(coll)
@@ -517,8 +521,8 @@ class HandlerErrorbar(HandlerLine2D):
                 handle_caplines.append(capline_right)
 
         if orig_handle.has_yerr:
-            verts = [((x, y - yerr_size), (x, y + yerr_size))
-                     for x, y in zip(xdata_marker, ydata_marker)]
+            verts = [ ((x, y - yerr_size), (x, y + yerr_size))
+                      for x, y in zip(xdata_marker, ydata_marker)]
             coll = mcoll.LineCollection(verts)
             self.update_prop(coll, barlinecols[0], legend)
             handle_barlinecols.append(coll)
@@ -589,11 +593,8 @@ class HandlerStem(HandlerNpointsYoffsets):
     def create_artists(self, legend, orig_handle,
                        xdescent, ydescent, width, height, fontsize,
                        trans):
+
         markerline, stemlines, baseline = orig_handle
-        # Check to see if the stemcontainer is storing lines as a list or a
-        # LineCollection. Eventually using a list will be removed, and this
-        # logic can also be removed.
-        using_linecoll = isinstance(stemlines, mcoll.LineCollection)
 
         xdata, xdata_marker = self.get_xdata(legend, xdescent, ydescent,
                                              width, height, fontsize)
@@ -609,45 +610,27 @@ class HandlerStem(HandlerNpointsYoffsets):
         leg_markerline = Line2D(xdata_marker, ydata[:len(xdata_marker)])
         self.update_prop(leg_markerline, markerline, legend)
 
-        leg_stemlines = [Line2D([x, x], [bottom, y])
-                         for x, y in zip(xdata_marker, ydata)]
+        leg_stemlines = []
+        for thisx, thisy in zip(xdata_marker, ydata):
+            l = Line2D([thisx, thisx], [bottom, thisy])
+            leg_stemlines.append(l)
 
-        if using_linecoll:
-            # change the function used by update_prop() from the default
-            # to one that handles LineCollection
-            orig_update_func = self._update_prop_func
-            self._update_prop_func = self._copy_collection_props
-
-            for line in leg_stemlines:
-                self.update_prop(line, stemlines, legend)
-
-        else:
-            for lm, m in zip(leg_stemlines, stemlines):
-                self.update_prop(lm, m, legend)
-
-        if using_linecoll:
-            self._update_prop_func = orig_update_func
+        for lm, m in zip(leg_stemlines, stemlines):
+            self.update_prop(lm, m, legend)
 
         leg_baseline = Line2D([np.min(xdata), np.max(xdata)],
                               [bottom, bottom])
+
         self.update_prop(leg_baseline, baseline, legend)
 
-        artists = leg_stemlines
+        artists = [leg_markerline]
+        artists.extend(leg_stemlines)
         artists.append(leg_baseline)
-        artists.append(leg_markerline)
 
         for artist in artists:
             artist.set_transform(trans)
 
         return artists
-
-    def _copy_collection_props(self, legend_handle, orig_handle):
-        """
-        Method to copy properties from a LineCollection (orig_handle) to a
-        Line2D (legend_handle).
-        """
-        legend_handle.set_color(orig_handle.get_color()[0])
-        legend_handle.set_linestyle(orig_handle.get_linestyle()[0])
 
 
 class HandlerTuple(HandlerBase):
@@ -707,8 +690,7 @@ class HandlerTuple(HandlerBase):
 
 class HandlerPolyCollection(HandlerBase):
     """
-    Handler for `.PolyCollection` used in `~.Axes.fill_between` and
-    `~.Axes.stackplot`.
+    Handler for `.PolyCollection` used in `~.Axes.fill_between` and `~.Axes.stackplot`.
     """
     def _update_prop(self, legend_handle, orig_handle):
         def first_color(colors):
@@ -746,3 +728,16 @@ class HandlerPolyCollection(HandlerBase):
         self.update_prop(p, orig_handle, legend)
         p.set_transform(trans)
         return [p]
+
+class HandlerAnnotation(HandlerBase): 						
+    def __init__(self, pad=None, **kwargs):
+        self._pad = pad
+        HandlerBase.__init__(self, **kwargs)
+
+    def create_artists(self, legend, orig_handle, xdescent, ydescent, width, height, fontsize, trans):
+        if orig_handle.arrowprops is not None:
+            handle = FancyArrowPatch([-xdescent - 3, -ydescent + height / 2], [-xdescent + width + 3, -ydescent + height / 2], mutation_scale=5, arrowstyle=orig_handle.arrow_patch.get_arrowstyle())
+            return [handle]
+        else:
+            p = Rectangle(xy=(-xdescent, -ydescent), width=width, height=height, color='w')
+            return[p]

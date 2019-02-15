@@ -5,15 +5,15 @@
 
 This example shows a how to plot a 2D and 3D plot on the same figure.
 """
-# This import registers the 3D projection, but is otherwise unused.
-from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
-
+from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import numpy as np
 
 
 def f(t):
-    return np.cos(2*np.pi*t) * np.exp(-t)
+    s1 = np.cos(2*np.pi*t)
+    e1 = np.exp(-t)
+    return np.multiply(s1, e1)
 
 
 # Set up a figure twice as tall as it is wide

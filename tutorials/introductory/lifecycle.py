@@ -23,10 +23,11 @@ Matplotlib has two interfaces. The first is an object-oriented (OO)
 interface. In this case, we utilize an instance of :class:`axes.Axes`
 in order to render visualizations on an instance of :class:`figure.Figure`.
 
-The second is based on MATLAB and uses a state-based interface. This is
-encapsulated in the :mod:`pyplot` module. See the :doc:`pyplot tutorials
-</tutorials/introductory/pyplot>` for a more in-depth look at the pyplot
-interface.
+The second is based on MATLAB and uses
+a state-based interface. This is encapsulated in the :mod:`pyplot`
+module. See the :ref:`pyplot tutorials
+<sphx_glr_tutorials_introductory_pyplot.py>`
+for a more in-depth look at the pyplot interface.
 
 Most of the terms are straightforward but the main thing to remember
 is that:
@@ -36,7 +37,9 @@ is that:
   "axis", which refers to the x/y axis of a plot).
 
 We call methods that do the plotting directly from the Axes, which gives
-us much more flexibility and power in customizing our plot.
+us much more flexibility and power in customizing our plot. See the
+:ref:`object-oriented examples <api_examples>` for many examples of how
+this approach is used.
 
 .. note::
 
@@ -82,8 +85,8 @@ group_mean = np.mean(group_data)
 # .. note::
 #
 #    Figures can have multiple axes on them. For information on how to do this,
-#    see the :doc:`Tight Layout tutorial
-#    </tutorials/intermediate/tight_layout_guide>`.
+#    see the :ref:`Tight Layout tutorial
+#    <sphx_glr_tutorials_intermediate_tight_layout_guide.py>`.
 
 fig, ax = plt.subplots()
 
@@ -146,7 +149,7 @@ plt.setp(labels, rotation=45, horizontalalignment='right')
 # that we create. To do this we'll set the ``autolayout`` value of our
 # rcParams. For more information on controlling the style, layout, and
 # other features of plots with rcParams, see
-# :doc:`/tutorials/introductory/customizing`.
+# :ref:`sphx_glr_tutorials_introductory_customizing.py`.
 
 plt.rcParams.update({'figure.autolayout': True})
 

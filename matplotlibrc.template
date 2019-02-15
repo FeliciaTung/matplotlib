@@ -29,17 +29,15 @@
 
 ##### CONFIGURATION BEGINS HERE
 
-## The default backend. If you omit this parameter, the first
-## working backend from the following list is used:
-## MacOSX Qt5Agg Qt4Agg Gtk3Agg TkAgg WxAgg Agg
-##
-## Other choices include:
-## Qt5Cairo Qt4Cairo GTK3Cairo TkCairo WxCairo Cairo Wx PS PDF SVG Template.
-##
+## The default backend; one of GTK3Agg GTK3Cairo MacOSX Qt4Agg Qt5Agg TkAgg
+## WX WXAgg Agg Cairo PS PDF SVG Template.
 ## You can also deploy your own backend outside of matplotlib by
 ## referring to the module name (which must be in the PYTHONPATH) as
 ## 'module://my_backend'.
-#backend      : Agg
+##
+## If you omit this parameter, it will always default to "Agg", which is a
+## non-interactive backend.
+backend      : $TEMPLATE_BACKEND
 
 ## Note that this can be overridden by the environment variable
 ## QT_API used by Enthought Tool Suite (ETS); valid values are
@@ -105,12 +103,12 @@
 ## information on patch properties
 #patch.linewidth        : 1        ## edge width in points.
 #patch.facecolor        : C0
-#patch.edgecolor        : black   ## if forced, or patch is not filled
+#patch.edgecolor        : k       ## if forced, or patch is not filled
 #patch.force_edgecolor  : False   ## True to always use edgecolor
 #patch.antialiased      : True    ## render patches in antialiased (no jaggies)
 
 #### HATCHES
-#hatch.color     : black
+#hatch.color     : k
 #hatch.linewidth : 1.0
 
 #### Boxplot
@@ -125,24 +123,23 @@
 #boxplot.showfliers  : True
 #boxplot.meanline    : False
 
-#boxplot.flierprops.color           : black
+#boxplot.flierprops.color           : k
 #boxplot.flierprops.marker          : o
 #boxplot.flierprops.markerfacecolor : none
-#boxplot.flierprops.markeredgecolor : black
-#boxplot.flierprops.markeredgewidth : 1.0
+#boxplot.flierprops.markeredgecolor : k
 #boxplot.flierprops.markersize      : 6
 #boxplot.flierprops.linestyle       : none
 #boxplot.flierprops.linewidth       : 1.0
 
-#boxplot.boxprops.color     : black
+#boxplot.boxprops.color     : k
 #boxplot.boxprops.linewidth : 1.0
 #boxplot.boxprops.linestyle : -
 
-#boxplot.whiskerprops.color     : black
+#boxplot.whiskerprops.color     : k
 #boxplot.whiskerprops.linewidth : 1.0
 #boxplot.whiskerprops.linestyle : -
 
-#boxplot.capprops.color     : black
+#boxplot.capprops.color     : k
 #boxplot.capprops.linewidth : 1.0
 #boxplot.capprops.linestyle : -
 
@@ -216,7 +213,7 @@
 ## text properties used by text.Text.  See
 ## http://matplotlib.org/api/artist_api.html#module-matplotlib.text for more
 ## information on text properties
-#text.color          : black
+#text.color          : k
 
 #### LaTeX customizations. See http://wiki.scipy.org/Cookbook/Matplotlib/UsingTex
 #text.usetex         : False  ## use latex for all text handling. The following fonts
@@ -228,21 +225,19 @@
                               ## If another font is desired which can loaded using the
                               ## LaTeX \usepackage command, please inquire at the
                               ## matplotlib mailing list
+#text.latex.unicode : False ## use "ucs" and "inputenc" LaTeX packages for handling
+                            ## unicode strings.
 #text.latex.preamble :      ## IMPROPER USE OF THIS FEATURE WILL LEAD TO LATEX FAILURES
                             ## AND IS THEREFORE UNSUPPORTED. PLEASE DO NOT ASK FOR HELP
                             ## IF THIS FEATURE DOES NOT DO WHAT YOU EXPECT IT TO.
-                            ## text.latex.preamble is a single line of LaTeX code that
-                            ## will be passed on to the LaTeX system. It may contain
-                            ## any code that is valid for the LaTeX "preamble", i.e.
-                            ## between the "\documentclass" and "\begin{document}"
-                            ## statements.
-                            ## Note that it has to be put on a single line, which may
-                            ## become quite long.
+                            ## preamble is a comma separated list of LaTeX statements
+                            ## that are included in the LaTeX document preamble.
+                            ## An example:
+                            ## text.latex.preamble : \usepackage{bm},\usepackage{euler}
                             ## The following packages are always loaded with usetex, so
                             ## beware of package collisions: color, geometry, graphicx,
-                            ## type1cm, textcomp.
-                            ## Adobe Postscript (PSSNFS) font packages may also be
-                            ## loaded, depending on your font settings.
+                            ## type1cm, textcomp. Adobe Postscript (PSSNFS) font packages
+                            ## may also be loaded, depending on your font settings
 #text.latex.preview : False
 
 #text.hinting : auto   ## May be one of the following:
@@ -287,8 +282,8 @@
 ## default face and edge color, default tick sizes,
 ## default fontsizes for ticklabels, and so on.  See
 ## http://matplotlib.org/api/axes_api.html#module-matplotlib.axes
-#axes.facecolor      : white   ## axes background color
-#axes.edgecolor      : black   ## axes edge color
+#axes.facecolor      : w       ## axes background color
+#axes.edgecolor      : k       ## axes edge color
 #axes.linewidth      : 0.8     ## edge linewidth
 #axes.grid           : False   ## display grid or not
 #axes.grid.axis      : both    ## which axis the grid should apply to
@@ -299,7 +294,7 @@
 #axes.labelsize      : medium  ## fontsize of the x any y labels
 #axes.labelpad       : 4.0     ## space between label and axis
 #axes.labelweight    : normal  ## weight of the x and y labels
-#axes.labelcolor     : black
+#axes.labelcolor     : k
 #axes.axisbelow      : line    ## draw axis gridlines and ticks below
                                ## patches (True); above patches but below
                                ## lines ('line'); or above all (False)
@@ -333,7 +328,7 @@
                       ## color cycle for plot lines  as list of string
                       ## colorspecs: single letter, long name, or web-style hex
 					  ## Note the use of string escapes here ('1f77b4', instead of 1f77b4)
-                      ## as opposed to the rest of this file.
+                      ## as opposed to the rest of this file.					  
 #axes.autolimit_mode : data ## How to scale axes limits to the data.
                             ## Use "data" to use data limits, plus some margin
                             ## Use "round_number" move to the nearest "round" number
@@ -371,7 +366,7 @@
 #xtick.minor.width    : 0.6    ## minor tick width in points
 #xtick.major.pad      : 3.5    ## distance to major tick label in points
 #xtick.minor.pad      : 3.4    ## distance to the minor tick label in points
-#xtick.color          : black  ## color of the tick labels
+#xtick.color          : k      ## color of the tick labels
 #xtick.labelsize      : medium ## fontsize of the tick labels
 #xtick.direction      : out    ## direction: in, out, or inout
 #xtick.minor.visible  : False  ## visibility of minor ticks on x-axis
@@ -391,7 +386,7 @@
 #ytick.minor.width    : 0.6    ## minor tick width in points
 #ytick.major.pad      : 3.5    ## distance to major tick label in points
 #ytick.minor.pad      : 3.4    ## distance to the minor tick label in points
-#ytick.color          : black  ## color of the tick labels
+#ytick.color          : k      ## color of the tick labels
 #ytick.labelsize      : medium ## fontsize of the tick labels
 #ytick.direction      : out    ## direction: in, out, or inout
 #ytick.minor.visible  : False  ## visibility of minor ticks on y-axis
@@ -420,7 +415,6 @@
 #legend.scatterpoints : 1        ## number of scatter points
 #legend.markerscale   : 1.0      ## the relative size of legend markers vs. original
 #legend.fontsize      : medium
-#legend.title_fontsize    : None ## None sets to the same as the default axes.
 ## Dimensions as fraction of fontsize:
 #legend.borderpad     : 0.4      ## border whitespace
 #legend.labelspacing  : 0.5      ## the vertical space between the legend entries
@@ -436,9 +430,9 @@
 #figure.titleweight : normal   ## weight of the figure title
 #figure.figsize   : 6.4, 4.8   ## figure size in inches
 #figure.dpi       : 100        ## figure dots per inch
-#figure.facecolor : white      ## figure facecolor
-#figure.edgecolor : white      ## figure edgecolor
-#figure.frameon : True         ## enable figure frame
+#figure.facecolor : w      ## figure facecolor; 0.75 is scalar gray
+#figure.edgecolor : w      ## figure edgecolor
+#figure.frameon : True          ## enable figure frame
 #figure.max_open_warning : 20  ## The maximum number of figures to open through
                                ## the pyplot interface before emitting a warning.
                                ## If less than one this feature is disabled.
@@ -458,11 +452,11 @@
                                ## using `tight_layout`
 #figure.constrained_layout.use: False ## When True, automatically make plot
                                       ## elements fit on the figure. (Not compatible
-                                      ## with `autolayout`, above).
-#figure.constrained_layout.h_pad : 0.04167 ## Padding around axes objects. Float representing
+                                      ## with `autolayout`, above).	
+#figure.constrained_layout.h_pad : 0.04167 ## Padding around axes objects. Float representing 
 #figure.constrained_layout.w_pad : 0.04167 ##  inches. Default is 3./72. inches (3 pts)
-#figure.constrained_layout.hspace : 0.02   ## Space between subplot groups. Float representing
-#figure.constrained_layout.wspace : 0.02   ##  a fraction of the subplot widths being separated.
+#figure.constrained_layout.hspace : 0.02   ## Space between subplot groups. Float representing 
+#figure.constrained_layout.wspace : 0.02   ##  a fraction of the subplot widths being separated. 
 
 #### IMAGES
 #image.aspect : equal             ## equal | auto | a number
@@ -482,6 +476,19 @@
 
 #### ERRORBAR PLOTS
 #errorbar.capsize : 0             ## length of end cap on error bars in pixels
+#errorbar.errorevery  : 1       ## Subsamples the errorbars
+#errorbar.linewidth   : 1.0     ## line width in points
+#errorbar.linestyle   : -       ## solid line
+#errorbar.color       : C0      ## has no affect on plot(); see axes.prop_cycle
+#errorbar.marker      : None    ## the default marker
+#errorbar.markerfacecolor  : auto    ## the default markerfacecolor
+#errorbar.markeredgecolor  : auto    ## the default markeredgecolor
+#errorbar.markersize  : 6            ## markersize, in points
+#errorbar.dash_joinstyle : round        ## miter|round|bevel
+#errorbar.dash_capstyle : butt          ## butt|round|projecting
+#errorbar.solid_joinstyle : round       ## miter|round|bevel
+#errorbar.solid_capstyle : projecting   ## butt|round|projecting
+#errorbar.antialiased : True         ## render lines in antialiased (no jaggies)
 
 #### HISTOGRAM PLOTS
 #hist.bins : 10                   ## The default number of histogram bins.
@@ -490,7 +497,6 @@
 
 #### SCATTER PLOTS
 #scatter.marker : o               ## The default marker type for scatter plots.
-#scatter.edgecolors : face        ## The default edgecolors for scatter plots.
 
 #### Agg rendering
 #### Warning: experimental, 2008/10/10
@@ -502,12 +508,12 @@
                                   ## It may cause minor artifacts, though.
                                   ## A value of 20000 is probably a good
                                   ## starting point.
-#### PATHS
+#### PATHS 
 #path.simplify : True   ## When True, simplify paths by removing "invisible"
                         ## points to reduce file size and increase rendering
                         ## speed
 #path.simplify_threshold : 0.111111111111  ## The threshold of similarity below which
-                                           ## vertices will be removed in the
+                                           ## vertices will be removed in the 
                                            ## simplification process
 #path.snap : True ## When True, rectilinear axis-aligned paths will be snapped to
                   ## the nearest pixel when certain criteria are met.  When False,
@@ -526,8 +532,8 @@
 ## e.g., you may want a higher resolution, or to make the figure
 ## background white
 #savefig.dpi         : figure   ## figure dots per inch or 'figure'
-#savefig.facecolor   : white    ## figure facecolor when saving
-#savefig.edgecolor   : white    ## figure edgecolor when saving
+#savefig.facecolor   : w        ## figure facecolor when saving
+#savefig.edgecolor   : w        ## figure edgecolor when saving
 #savefig.format      : png      ## png, ps, pdf, svg
 #savefig.bbox        : standard ## 'tight' or 'standard'.
                                 ## 'tight' is incompatible with pipe-based animation
@@ -540,8 +546,8 @@
                                 ## leave empty to always use current working directory
 #savefig.transparent : False    ## setting that controls whether figures are saved with a
                                 ## transparent background by default
-#savefig.frameon : True			## enable frame of figure when saving
-#savefig.orientation : portrait	## Orientation of saved figure
+#savefig.frameon : True			## enable frame of figure when saving 
+#savefig.orientation : portrait	## Orientation of saved figure				
 
 ### tk backend params
 #tk.window_focus   : False    ## Maintain shell focus for TkAgg
@@ -568,11 +574,13 @@
 #svg.fonttype :   path         ## How to handle SVG fonts:
    ##     none: Assume fonts are installed on the machine where the SVG will be viewed.
    ##     path: Embed characters as paths -- supported by most SVG renderers
+   ##     svgfont: Embed characters as SVG fonts -- supported only by Chrome,
+   ##                Opera and Safari
 #svg.hashsalt : None           ## if not None, use this string as hash salt
                                ## instead of uuid4
 ### pgf parameter
 #pgf.rcfonts : True
-#pgf.preamble :            ## see text.latex.preamble for documentation
+#pgf.preamble :
 #pgf.texsystem : xelatex
 
 ### docstring params
@@ -588,7 +596,6 @@
 #keymap.pan : p                      ## pan mnemonic
 #keymap.zoom : o                     ## zoom mnemonic
 #keymap.save : s, ctrl+s             ## saving current figure
-#keymap.help : f1                    ## display help about active tools
 #keymap.quit : ctrl+w, cmd+w, q      ## close the current figure
 #keymap.quit_all : W, cmd+W, Q       ## close all figures
 #keymap.grid : g                     ## switching on/off major grids in current axes
@@ -596,12 +603,14 @@
 #keymap.yscale : l                   ## toggle scaling of y-axes ('log'/'linear')
 #keymap.xscale : k, L                ## toggle scaling of x-axes ('log'/'linear')
 #keymap.all_axes : a                 ## enable all axes
-#keymap.copy : ctrl+c, cmd+c         ## Copy figure to clipboard
+
+## Control location of examples data files
+#examples.directory :              ## directory to look in for custom installation
 
 ###ANIMATION settings
 #animation.html :  none            ## How to display the animation as HTML in
                                    ## the IPython notebook. 'html5' uses
-                                   ## HTML5 video tag; 'jshtml' creates a
+                                   ## HTML5 video tag; 'jshtml' creates a 
                                    ## Javascript animation
 #animation.writer : ffmpeg         ## MovieWriter 'backend' to use
 #animation.codec : h264            ## Codec to use for writing movie

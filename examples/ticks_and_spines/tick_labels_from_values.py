@@ -17,7 +17,8 @@ take integer values.
 
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter, MaxNLocator
-fig, ax = plt.subplots()
+fig = plt.figure()
+ax = fig.add_subplot(111)
 xs = range(26)
 ys = range(26)
 labels = list('abcdefghijklmnopqrstuvwxyz')

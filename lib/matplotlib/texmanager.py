@@ -25,18 +25,28 @@ as follows::
   Z = texmanager.get_rgba(s, fontsize=12, dpi=80, rgb=(1,0,0))
 
 To enable tex rendering of all text in your matplotlib figure, set
-:rc:`text.usetex` to True.
+text.usetex in your matplotlibrc file or include these two lines in
+your script::
+
+  from matplotlib import rc
+  rc('text', usetex=True)
+
 """
 
+import six
+
 import copy
-import functools
+import distutils.version
 import glob
 import hashlib
 import logging
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
+import sys
+import warnings
 
 import numpy as np
 
@@ -49,8 +59,6 @@ _log = logging.getLogger(__name__)
 class TexManager(object):
     """
     Convert strings to dvi files using TeX, caching the results to a directory.
-
-    Repeated calls to this constructor always return the same instance.
     """
 
     cachedir = mpl.get_cachedir()
@@ -65,6 +73,8 @@ class TexManager(object):
     # Caches.
     rgba_arrayd = {}
     grey_arrayd = {}
+    postscriptd = property(mpl.cbook.deprecated("2.2")(lambda self: {}))
+    pscnt = property(mpl.cbook.deprecated("2.2")(lambda self: 0))
 
     serif = ('cmr', '')
     sans_serif = ('cmss', '')
@@ -92,17 +102,12 @@ class TexManager(object):
         'computer modern typewriter': ('cmtt', '')}
 
     _rc_cache = None
-    _rc_cache_keys = (
-        ('text.latex.preamble', 'text.latex.unicode', 'text.latex.preview',
-         'font.family') + tuple('font.' + n for n in font_families))
+    _rc_cache_keys = (('text.latex.preamble', ) +
+                      tuple(['font.' + n for n in ('family', ) +
+                             font_families]))
 
-    @functools.lru_cache()  # Always return the same instance.
-    def __new__(cls):
-        self = object.__new__(cls)
-        self._reinit()
-        return self
+    def __init__(self):
 
-    def _reinit(self):
         if self.texcache is None:
             raise RuntimeError('Cannot create TexManager, as there is no '
                                'cache directory available')
@@ -111,7 +116,8 @@ class TexManager(object):
         ff = rcParams['font.family']
         if len(ff) == 1 and ff[0].lower() in self.font_families:
             self.font_family = ff[0].lower()
-        elif isinstance(ff, str) and ff.lower() in self.font_families:
+        elif (isinstance(ff, six.string_types)
+              and ff.lower() in self.font_families):
             self.font_family = ff.lower()
         else:
             _log.info('font.family must be one of (%s) when text.usetex is '
@@ -175,7 +181,7 @@ class TexManager(object):
                 # deepcopy may not be necessary, but feels more future-proof
                 self._rc_cache[k] = copy.deepcopy(rcParams[k])
             _log.debug('RE-INIT\nold fontconfig: %s', self._fontconfig)
-            self._reinit()
+            self.__init__()
         _log.debug('fontconfig: %s', self._fontconfig)
         return self._fontconfig
 
@@ -187,7 +193,7 @@ class TexManager(object):
 
     def get_custom_preamble(self):
         """Return a string containing user additions to the tex preamble."""
-        return rcParams['text.latex.preamble']
+        return '\n'.join(rcParams['text.latex.preamble'])
 
     def make_tex(self, tex, fontsize):
         """
@@ -205,7 +211,8 @@ class TexManager(object):
 
         if rcParams['text.latex.unicode']:
             unicode_preamble = r"""
-\usepackage[utf8]{inputenc}"""
+\usepackage{ucs}
+\usepackage[utf8x]{inputenc}"""
         else:
             unicode_preamble = ''
 
@@ -256,7 +263,8 @@ class TexManager(object):
 
         if rcParams['text.latex.unicode']:
             unicode_preamble = r"""
-\usepackage[utf8]{inputenc}"""
+\usepackage{ucs}
+\usepackage[utf8x]{inputenc}"""
         else:
             unicode_preamble = ''
 
@@ -302,10 +310,6 @@ class TexManager(object):
             report = subprocess.check_output(command,
                                              cwd=self.texcache,
                                              stderr=subprocess.STDOUT)
-        except FileNotFoundError as exc:
-            raise RuntimeError(
-                'Failed to process string with tex because {} could not be '
-                'found'.format(command[0])) from exc
         except subprocess.CalledProcessError as exc:
             raise RuntimeError(
                 '{prog} was not able to process the following string:\n'
@@ -314,7 +318,7 @@ class TexManager(object):
                 '{exc}\n\n'.format(
                     prog=command[0],
                     tex=tex.encode('unicode_escape'),
-                    exc=exc.output.decode('utf-8'))) from exc
+                    exc=exc.output.decode('utf-8')))
         _log.debug(report)
         return report
 
@@ -395,6 +399,33 @@ class TexManager(object):
                  "-T", "tight", "-o", pngfile, dvifile], tex)
         return pngfile
 
+    @mpl.cbook.deprecated("2.2")
+    def make_ps(self, tex, fontsize):
+        """
+        Generate a postscript file containing latex's rendering of tex string.
+
+        Return the file name.
+        """
+        basefile = self.get_basefile(tex, fontsize)
+        psfile = '%s.epsf' % basefile
+        if not os.path.exists(psfile):
+            dvifile = self.make_dvi(tex, fontsize)
+            self._run_checked_subprocess(
+                ["dvips", "-q", "-E", "-o", psfile, dvifile], tex)
+        return psfile
+
+    @mpl.cbook.deprecated("2.2")
+    def get_ps_bbox(self, tex, fontsize):
+        """
+        Return a list of PS bboxes for latex's rendering of the tex string.
+        """
+        psfile = self.make_ps(tex, fontsize)
+        with open(psfile) as ps:
+            for line in ps:
+                if line.startswith('%%BoundingBox:'):
+                    return [int(val) for val in line.split()[1:]]
+        raise RuntimeError('Could not parse %s' % psfile)
+
     def get_grey(self, tex, fontsize=None, dpi=None):
         """Return the alpha channel."""
         key = tex, self.get_font_config(), fontsize, dpi
@@ -446,6 +477,6 @@ class TexManager(object):
             # use dviread. It sometimes returns a wrong descent.
             dvifile = self.make_dvi(tex, fontsize)
             with dviread.Dvi(dvifile, 72 * dpi_fraction) as dvi:
-                page, = dvi
+                page = next(iter(dvi))
             # A total height (including the descent) needs to be returned.
             return page.width, page.height + page.descent, page.descent

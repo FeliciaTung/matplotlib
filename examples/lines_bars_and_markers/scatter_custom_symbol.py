@@ -3,8 +3,6 @@
 Scatter Custom Symbol
 =====================
 
-Creating a custom ellipse symbol in scatter plot.
-
 """
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,6 +17,6 @@ x, y, s, c = np.random.rand(4, 30)
 s *= 10**2.
 
 fig, ax = plt.subplots()
-ax.scatter(x, y, s, c, marker=verts)
+ax.scatter(x, y, s, c, marker=None, verts=verts)
 
 plt.show()

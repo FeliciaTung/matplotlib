@@ -20,18 +20,3 @@ im.set_clip_path(patch)
 
 ax.axis('off')
 plt.show()
-
-#############################################################################
-#
-# ------------
-#
-# References
-# """"""""""
-#
-# The use of the following functions and methods is shown
-# in this example:
-
-import matplotlib
-matplotlib.axes.Axes.imshow
-matplotlib.pyplot.imshow
-matplotlib.artist.Artist.set_clip_path

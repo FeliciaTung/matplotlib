@@ -43,8 +43,8 @@
 
 /**********************************************************************/
 
-// a helper class to pass agg::buffer objects around.  
-
+// a helper class to pass agg::buffer objects around.  agg::buffer is
+// a class in the swig wrapper
 class BufferRegion
 {
   public:
@@ -203,6 +203,9 @@ class RendererAgg
                                 ColorArray &colors,
                                 agg::trans_affine &trans);
 
+    void tostring_rgb(uint8_t *buf);
+    void tostring_argb(uint8_t *buf);
+    void tostring_bgra(uint8_t *buf);
     agg::rect_i get_content_extents();
     void clear();
 

@@ -1,13 +1,12 @@
-import tkinter as tk
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
+import six
+from six.moves import tkinter as Tk
 
 import numpy as np
 
-from matplotlib import cbook
 from matplotlib.backends import _tkagg
-
-
-cbook.warn_deprecated("3.0", name=__name__, obj_type="module")
-
 
 def blit(photoimage, aggimage, bbox=None, colormode=1):
     tk = photoimage.tk
@@ -25,7 +24,7 @@ def blit(photoimage, aggimage, bbox=None, colormode=1):
         tk.call(
             "PyAggImagePhoto", photoimage,
             dataptr, colormode, bboxptr)
-    except tk.TclError:
+    except Tk.TclError:
         if hasattr(tk, 'interpaddr'):
             _tkagg.tkinit(tk.interpaddr(), 1)
         else:
@@ -34,14 +33,12 @@ def blit(photoimage, aggimage, bbox=None, colormode=1):
         tk.call("PyAggImagePhoto", photoimage,
                 dataptr, colormode, bboxptr)
 
-
 def test(aggimage):
-    r = tk.Tk()
-    c = tk.Canvas(r, width=aggimage.width, height=aggimage.height)
+    r = Tk.Tk()
+    c = Tk.Canvas(r, width=aggimage.width, height=aggimage.height)
     c.pack()
-    p = tk.PhotoImage(width=aggimage.width, height=aggimage.height)
+    p = Tk.PhotoImage(width=aggimage.width, height=aggimage.height)
     blit(p, aggimage)
-    c.create_image(aggimage.width, aggimage.height, image=p)
+    c.create_image(aggimage.width,aggimage.height,image=p)
     blit(p, aggimage)
-    while True:
-        r.update_idletasks()
+    while True: r.update_idletasks()

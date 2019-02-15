@@ -2,22 +2,26 @@
 # Created: 23 Sep 2005
 # Parts rewritten by Reinier Heeres <reinier@heeres.eu>
 
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
+import six
+
+import math
 import copy
 
+from matplotlib import lines as mlines, axis as maxis, patches as mpatches
+from matplotlib import rcParams
+from . import art3d
+from . import proj3d
+
 import numpy as np
-
-from matplotlib import (
-    artist, cbook, lines as mlines, axis as maxis, patches as mpatches,
-    rcParams)
-from . import art3d, proj3d
-
 
 def get_flip_min_max(coord, index, mins, maxs):
     if coord[index] == mins[index]:
         return maxs[index]
     else:
         return mins[index]
-
 
 def move_from_center(coord, centers, deltas, axmask=(True, True, True)):
     '''Return a coordinate that is moved by "deltas" away from the center.'''
@@ -31,22 +35,22 @@ def move_from_center(coord, centers, deltas, axmask=(True, True, True)):
             coord[i] += deltas[i]
     return coord
 
-
 def tick_update_position(tick, tickxs, tickys, labelpos):
     '''Update tick line and label position and style.'''
 
-    tick.label1.set_position(labelpos)
-    tick.label2.set_position(labelpos)
-    tick.tick1line.set_visible(True)
-    tick.tick2line.set_visible(False)
+    for (label, on) in [(tick.label1, tick.label1On),
+                        (tick.label2, tick.label2On)]:
+        if on:
+            label.set_position(labelpos)
+
+    tick.tick1On, tick.tick2On = True, False
     tick.tick1line.set_linestyle('-')
     tick.tick1line.set_marker('')
     tick.tick1line.set_data(tickxs, tickys)
     tick.gridline.set_data(0, 0)
 
-
 class Axis(maxis.XAxis):
-    """An Axis class for the 3D plots. """
+
     # These points from the unit cube make up the x, y and z-planes
     _PLANES = (
         (0, 3, 7, 4), (1, 2, 6, 5),     # yz planes
@@ -64,8 +68,7 @@ class Axis(maxis.XAxis):
             'color': (0.925, 0.925, 0.925, 0.5)},
     }
 
-    def __init__(self, adir, v_intervalx, d_intervalx, axes, *args,
-                 rotate_label=None, **kwargs):
+    def __init__(self, adir, v_intervalx, d_intervalx, axes, *args, **kwargs):
         # adir identifies which axes this is
         self.adir = adir
         # data and viewing intervals for this direction
@@ -109,7 +112,7 @@ class Axis(maxis.XAxis):
                  })
 
         maxis.XAxis.__init__(self, axes, *args, **kwargs)
-        self.set_rotate_label(rotate_label)
+        self.set_rotate_label(kwargs.get('rotate_label', None))
 
     def init3d(self):
         self.line = mlines.Line2D(
@@ -134,10 +137,11 @@ class Axis(maxis.XAxis):
         self.label._transform = self.axes.transData
         self.offsetText._transform = self.axes.transData
 
-    @cbook.deprecated("3.1")
     def get_tick_positions(self):
         majorLocs = self.major.locator()
-        majorLabels = self.major.formatter.format_ticks(majorLocs)
+        self.major.formatter.set_locs(majorLocs)
+        majorLabels = [self.major.formatter(val, i)
+                       for i, val in enumerate(majorLocs)]
         return majorLabels, majorLocs
 
     def get_major_ticks(self, numticks=None):
@@ -152,7 +156,7 @@ class Axis(maxis.XAxis):
 
     def set_pane_pos(self, xys):
         xys = np.asarray(xys)
-        xys = xys[:, :2]
+        xys = xys[:,:2]
         self.pane.xy = xys
         self.stale = True
 
@@ -218,7 +222,6 @@ class Axis(maxis.XAxis):
 
         renderer.close_group('pane3d')
 
-    @artist.allow_rasterization
     def draw(self, renderer):
         self.label._transform = self.axes.transData
         renderer.open_group('axis3d')
@@ -236,8 +239,11 @@ class Axis(maxis.XAxis):
             locmin, locmax = locmax, locmin
 
         # Rudimentary clipping
-        majorLocs = [loc for loc in majorLocs if locmin <= loc <= locmax]
-        majorLabels = self.major.formatter.format_ticks(majorLocs)
+        majorLocs = [loc for loc in majorLocs if
+                     locmin <= loc <= locmax]
+        self.major.formatter.set_locs(majorLocs)
+        majorLabels = [self.major.formatter(val, i)
+                       for i, val in enumerate(majorLocs)]
 
         mins, maxs, centers, deltas, tc, highs = self._get_coord_info(renderer)
 
@@ -293,7 +299,7 @@ class Axis(maxis.XAxis):
                                               renderer.M)
         self.label.set_position((tlx, tly))
         if self.get_rotate_label(self.label.get_text()):
-            angle = art3d._norm_text_angle(np.rad2deg(np.arctan2(dy, dx)))
+            angle = art3d.norm_text_angle(math.degrees(math.atan2(dy, dx)))
             self.label.set_rotation(angle)
         self.label.set_va(info['label']['va'])
         self.label.set_ha(info['label']['ha'])
@@ -316,7 +322,7 @@ class Axis(maxis.XAxis):
             pos[0], pos[1], pos[2], renderer.M)
         self.offsetText.set_text(self.major.formatter.get_offset())
         self.offsetText.set_position((olx, oly))
-        angle = art3d._norm_text_angle(np.rad2deg(np.arctan2(dy, dx)))
+        angle = art3d.norm_text_angle(math.degrees(math.atan2(dy, dx)))
         self.offsetText.set_rotation(angle)
         # Must set rotation mode to "anchor" so that
         # the alignment point is used as the "fulcrum" for rotation.
@@ -442,11 +448,10 @@ class Axis(maxis.XAxis):
         self.stale = False
 
     def get_view_interval(self):
-        # docstring inherited
+        """return the Interval instance for this 3d axis view limits"""
         return self.v_interval
 
     def set_view_interval(self, vmin, vmax, ignore=False):
-        # docstring inherited
         if ignore:
             self.v_interval = vmin, vmax
         else:
@@ -460,23 +465,19 @@ class Axis(maxis.XAxis):
         # doesn't return junk info.
         return None
 
-
 # Use classes to look at different data limits
-
 
 class XAxis(Axis):
     def get_data_interval(self):
-        # docstring inherited
+        'return the Interval instance for this axis data limits'
         return self.axes.xy_dataLim.intervalx
-
 
 class YAxis(Axis):
     def get_data_interval(self):
-        # docstring inherited
+        'return the Interval instance for this axis data limits'
         return self.axes.xy_dataLim.intervaly
-
 
 class ZAxis(Axis):
     def get_data_interval(self):
-        # docstring inherited
+        'return the Interval instance for this axis data limits'
         return self.axes.zz_dataLim.intervalx

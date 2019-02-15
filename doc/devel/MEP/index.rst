@@ -1,8 +1,10 @@
 .. _MEP-index:
 
-.. include:: README.rst
+################################
+Matplotlib Enhancement Proposals
+################################
 
-.. only:: html
+.. htmlonly::
 
    :Release: |version|
    :Date: |today|
@@ -11,9 +13,22 @@
    :maxdepth: 1
 
    template
+   MEP08
+   MEP09
+   MEP10
+   MEP11
+   MEP12
+   MEP13
+   MEP14
+   MEP15
+   MEP19
+   MEP21
+   MEP22
+   MEP23
+   MEP24
+   MEP25
+   MEP26
+   MEP27
+   MEP28
+   MEP29
 
-.. toctree::
-   :glob:
-   :maxdepth: 1
-
-   MEP*

@@ -42,4 +42,5 @@ plt.axhline(0.4)
 plt.title("test line spacing for multiline text")
 
 plt.subplots_adjust(bottom=0.25, top=0.75)
+plt.draw()
 plt.show()

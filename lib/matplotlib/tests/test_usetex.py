@@ -1,21 +1,14 @@
-import warnings
+from __future__ import absolute_import, division, print_function
 
 import pytest
 
 import matplotlib
 from matplotlib.testing.decorators import image_comparison
 import matplotlib.pyplot as plt
-from matplotlib.ticker import EngFormatter
 
 
-with warnings.catch_warnings():
-    warnings.simplefilter('ignore')
-    needs_usetex = pytest.mark.skipif(
-        not matplotlib.checkdep_usetex(True),
-        reason='Missing TeX of Ghostscript or dvipng')
-
-
-@needs_usetex
+@pytest.mark.skipif(not matplotlib.checkdep_usetex(True),
+                    reason='Missing TeX or Ghostscript or dvipng')
 @image_comparison(baseline_images=['test_usetex'],
                   extensions=['pdf', 'png'],
                   tol=0.3)
@@ -32,18 +25,3 @@ def test_usetex():
             fontsize=24)
     ax.set_xticks([])
     ax.set_yticks([])
-
-
-@needs_usetex
-def test_usetex_engformatter():
-    matplotlib.rcParams['text.usetex'] = True
-    fig, ax = plt.subplots()
-    ax.plot([0, 500, 1000], [0, 500, 1000])
-    ax.set_xticks([0, 500, 1000])
-    formatter = EngFormatter()
-    ax.xaxis.set_major_formatter(formatter)
-    fig.canvas.draw()
-    x_tick_label_text = [label.get_text() for label in ax.get_xticklabels()]
-    # Checking if the dollar `$` signs have been inserted around numbers
-    # in tick label text.
-    assert x_tick_label_text == ['$0$', '$500$', '$1$ k']

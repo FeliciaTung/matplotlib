@@ -15,8 +15,7 @@ Note: Because this is a simple non-linear ODE, it would be more easily
 
 import numpy as np
 import matplotlib.pyplot as plt
-# This import registers the 3D projection, but is otherwise unused.
-from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
+from mpl_toolkits.mplot3d import Axes3D
 
 
 def lorenz(x, y, z, s=10, r=28, b=2.667):
@@ -38,9 +37,9 @@ dt = 0.01
 num_steps = 10000
 
 # Need one more for the initial values
-xs = np.empty(num_steps + 1)
-ys = np.empty(num_steps + 1)
-zs = np.empty(num_steps + 1)
+xs = np.empty((num_steps + 1,))
+ys = np.empty((num_steps + 1,))
+zs = np.empty((num_steps + 1,))
 
 # Set initial values
 xs[0], ys[0], zs[0] = (0., 1., 1.05)

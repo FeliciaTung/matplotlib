@@ -1,10 +1,10 @@
+from __future__ import print_function, unicode_literals
+
 from matplotlib.testing.decorators import image_comparison
 import matplotlib.pyplot as plt
 from matplotlib.scale import Log10Transform, InvertedLog10Transform
-
 import numpy as np
 import io
-import platform
 import pytest
 
 
@@ -19,7 +19,7 @@ def test_log_scales():
 @image_comparison(baseline_images=['logit_scales'], remove_text=True,
                   extensions=['png'])
 def test_logit_scales():
-    fig, ax = plt.subplots()
+    ax = plt.figure().add_subplot(111, xscale='logit')
 
     # Typical extinction curve for logit
     x = np.array([0.001, 0.003, 0.01, 0.03, 0.1, 0.2, 0.3, 0.4, 0.5,
@@ -27,11 +27,7 @@ def test_logit_scales():
     y = 1.0 / x
 
     ax.plot(x, y)
-    ax.set_xscale('logit')
     ax.grid(True)
-    bbox = ax.get_tightbbox(fig.canvas.get_renderer())
-    assert np.isfinite(bbox.x0)
-    assert np.isfinite(bbox.y0)
 
 
 def test_log_scatter():
@@ -95,12 +91,12 @@ def test_logscale_transform_repr():
     ax.set_yscale('log')
     s = repr(ax.transData)
 
-    # check that repr of log transform succeeds
+    # check that repr of log transform returns correct string
     s = repr(Log10Transform(nonpos='clip'))
+    assert s == "Log10Transform({!r})".format('clip')
 
 
 @image_comparison(baseline_images=['logscale_nonpos_values'], remove_text=True,
-                  tol={'aarch64': 0.02}.get(platform.machine(), 0.0),
                   extensions=['png'], style='mpl20')
 def test_logscale_nonpos_values():
     np.random.seed(19680801)
@@ -125,45 +121,3 @@ def test_logscale_nonpos_values():
 
     ax4.set_yscale('log')
     ax4.set_xscale('log')
-
-
-def test_invalid_log_lims():
-    # Check that invalid log scale limits are ignored
-    fig, ax = plt.subplots()
-    ax.scatter(range(0, 4), range(0, 4))
-
-    ax.set_xscale('log')
-    original_xlim = ax.get_xlim()
-    with pytest.warns(UserWarning):
-        ax.set_xlim(left=0)
-    assert ax.get_xlim() == original_xlim
-    with pytest.warns(UserWarning):
-        ax.set_xlim(right=-1)
-    assert ax.get_xlim() == original_xlim
-
-    ax.set_yscale('log')
-    original_ylim = ax.get_ylim()
-    with pytest.warns(UserWarning):
-        ax.set_ylim(bottom=0)
-    assert ax.get_ylim() == original_ylim
-    with pytest.warns(UserWarning):
-        ax.set_ylim(top=-1)
-    assert ax.get_ylim() == original_ylim
-
-
-@image_comparison(baseline_images=['function_scales'], remove_text=True,
-                  extensions=['png'], style='mpl20')
-def test_function_scale():
-    def inverse(x):
-        return x**2
-
-    def forward(x):
-        return x**(1/2)
-
-    fig, ax = plt.subplots()
-
-    x = np.arange(1, 1000)
-
-    ax.plot(x, x)
-    ax.set_xscale('function', functions=(forward, inverse))
-    ax.set_xlim(1, 1000)

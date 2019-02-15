@@ -1,6 +1,9 @@
-************************
-``matplotlib.type1font``
-************************
+****************
+type1font
+****************
+
+:mod:`matplotlib.type1font`
+===========================
 
 .. automodule:: matplotlib.type1font
    :members:

@@ -9,14 +9,14 @@ Interface::
       # iterate over pages:
       for page in dvi:
           w, h, d = page.width, page.height, page.descent
-          for x, y, font, glyph, width in page.text:
+          for x,y,font,glyph,width in page.text:
               fontname = font.texname
               pointsize = font.size
               ...
-          for x, y, height, width in page.boxes:
+          for x,y,height,width in page.boxes:
               ...
-"""
 
+"""
 from collections import namedtuple
 import enum
 from functools import lru_cache, partial, wraps
@@ -24,6 +24,8 @@ import logging
 import os
 import re
 import struct
+import subprocess
+import sys
 import textwrap
 
 import numpy as np
@@ -31,10 +33,6 @@ import numpy as np
 from matplotlib import cbook, rcParams
 
 _log = logging.getLogger(__name__)
-
-# Many dvi related files are looked for by external processes, require
-# additional parsing, and are used many times per rendering, which is why they
-# are cached using lru_cache().
 
 # Dvi is a bytecode format documented in
 # http://mirrors.ctan.org/systems/knuth/dist/texware/dvitype.web
@@ -179,9 +177,9 @@ class Dvi(object):
     file upon exit. Pages can be read via iteration. Here is an overly
     simple way to extract text without trying to detect whitespace::
 
-        >>> with matplotlib.dviread.Dvi('input.dvi', 72) as dvi:
-        ...     for page in dvi:
-        ...         print(''.join(chr(t.glyph) for t in page.text))
+    >>> with matplotlib.dviread.Dvi('input.dvi', 72) as dvi:
+    >>>     for page in dvi:
+    >>>         print(''.join(unichr(t.glyph) for t in page.text))
     """
     # dispatch table
     _dtable = [None] * 256
@@ -530,10 +528,8 @@ class DviFont(object):
         if not isinstance(texname, bytes):
             raise ValueError("texname must be a bytestring, got %s"
                              % type(texname))
-        self._scale = scale
-        self._tfm = tfm
-        self.texname = texname
-        self._vf = vf
+        self._scale, self._tfm, self.texname, self._vf = \
+            scale, tfm, texname, vf
         self.size = scale * (72.0 / (72.27 * 2**16))
         try:
             nchars = max(tfm.width) + 1
@@ -543,17 +539,17 @@ class DviFont(object):
                        for char in range(nchars)]
 
     def __eq__(self, other):
-        return (type(self) == type(other)
-                and self.texname == other.texname and self.size == other.size)
+        return self.__class__ == other.__class__ and \
+            self.texname == other.texname and self.size == other.size
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    def __repr__(self):
-        return "<{}: {}>".format(type(self).__name__, self.texname)
-
     def _width_of(self, char):
-        """Width of char in dvi units."""
+        """
+        Width of char in dvi units. For internal use by dviread.py.
+        """
+
         width = self._tfm.width.get(char, None)
         if width is not None:
             return _mul2012(width, self._scale)
@@ -561,7 +557,10 @@ class DviFont(object):
         return 0
 
     def _height_depth_of(self, char):
-        """Height and depth of char in dvi units."""
+        """
+        Height and depth of char in dvi units. For internal use by dviread.py.
+        """
+
         result = []
         for metric, name in ((self._tfm.height, "height"),
                              (self._tfm.depth, "depth")):
@@ -576,8 +575,8 @@ class DviFont(object):
 
 
 class Vf(Dvi):
-    r"""
-    A virtual font (\*.vf file) containing subroutines for dvi files.
+    """
+    A virtual font (\\*.vf file) containing subroutines for dvi files.
 
     Usage::
 
@@ -587,10 +586,12 @@ class Vf(Dvi):
 
     Parameters
     ----------
+
     filename : string or bytestring
 
     Notes
     -----
+
     The virtual font format is a derivative of dvi:
     http://mirrors.ctan.org/info/knuth/virtual-fonts
     This class reuses some of the machinery of `Dvi`
@@ -686,7 +687,9 @@ class Vf(Dvi):
 
 
 def _fix2comp(num):
-    """Convert from two's complement to negative."""
+    """
+    Convert from two's complement to negative.
+    """
     assert 0 <= num < 2**32
     if num & 2**31:
         return num - 2**32
@@ -695,7 +698,9 @@ def _fix2comp(num):
 
 
 def _mul2012(num1, num2):
-    """Multiply two numbers in 20.12 fixed point format."""
+    """
+    Multiply two numbers in 20.12 fixed point format.
+    """
     # Separated into a function because >> has surprising precedence
     return (num1*num2) >> 20
 
@@ -803,17 +808,14 @@ class PsfontsMap(object):
     """
     __slots__ = ('_font', '_filename')
 
-    # Create a filename -> PsfontsMap cache, so that calling
-    # `PsfontsMap(filename)` with the same filename a second time immediately
-    # returns the same object.
-    @lru_cache()
-    def __new__(cls, filename):
-        self = object.__new__(cls)
+    def __init__(self, filename):
         self._font = {}
-        self._filename = os.fsdecode(filename)
+        self._filename = filename
+        if isinstance(filename, bytes):
+            encoding = sys.getfilesystemencoding() or 'utf-8'
+            self._filename = filename.decode(encoding, errors='replace')
         with open(filename, 'rb') as file:
             self._parse(file)
-        return self
 
     def __getitem__(self, texname):
         assert isinstance(texname, bytes)
@@ -924,8 +926,8 @@ class PsfontsMap(object):
 
 
 class Encoding(object):
-    r"""
-    Parses a \*.enc file referenced from a psfonts.map style file.
+    """
+    Parses a \\*.enc file referenced from a psfonts.map style file.
     The format this class understands is a very limited subset of
     PostScript.
 
@@ -954,8 +956,9 @@ class Encoding(object):
     def __iter__(self):
         yield from self.encoding
 
-    @staticmethod
-    def _parse(file):
+    def _parse(self, file):
+        result = []
+
         lines = (line.split(b'%', 1)[0].strip() for line in file)
         data = b''.join(lines)
         beginning = data.find(b'[')
@@ -972,7 +975,6 @@ class Encoding(object):
         return re.findall(br'/([^][{}<>\s]+)', data)
 
 
-@lru_cache()
 def find_tex_file(filename, format=None):
     """
     Find a file in the texmf tree.
@@ -981,8 +983,6 @@ def find_tex_file(filename, format=None):
     library [1]_. Most existing TeX distributions on Unix-like systems use
     kpathsea. It is also available as part of MikTeX, a popular
     distribution on Windows.
-
-    *If the file is not found, an empty string is returned*.
 
     Parameters
     ----------
@@ -1005,27 +1005,20 @@ def find_tex_file(filename, format=None):
     if isinstance(format, bytes):
         format = format.decode('utf-8', errors='replace')
 
-    if os.name == 'nt':
-        # On Windows only, kpathsea can use utf-8 for cmd args and output.
-        # The `command_line_encoding` environment variable is set to force it
-        # to always use utf-8 encoding. See mpl issue #11848 for more info.
-        kwargs = dict(env=dict(os.environ, command_line_encoding='utf-8'))
-    else:
-        kwargs = {}
-
     cmd = ['kpsewhich']
     if format is not None:
         cmd += ['--format=' + format]
     cmd += [filename]
-    try:
-        result = cbook._check_and_log_subprocess(cmd, _log, **kwargs)
-    except RuntimeError:
-        return ''
-    if os.name == 'nt':
-        return result.decode('utf-8').rstrip('\r\n')
-    else:
-        return os.fsdecode(result).rstrip('\n')
+    _log.debug('find_tex_file(%s): %s', filename, cmd)
+    pipe = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    result = pipe.communicate()[0].rstrip()
+    _log.debug('find_tex_file result: %s', result)
+    return result.decode('ascii')
 
+
+# With multiple text objects per figure (e.g., tick labels) we may end
+# up reading the same tfm and vf files many times, so we implement a
+# simple cache. TODO: is this worth making persistent?
 
 @lru_cache()
 def _fontfile(cls, suffix, texname):
@@ -1038,24 +1031,21 @@ _vffile = partial(_fontfile, Vf, ".vf")
 
 
 if __name__ == '__main__':
-    from argparse import ArgumentParser
-    import itertools
-
-    parser = ArgumentParser()
-    parser.add_argument("filename")
-    parser.add_argument("dpi", nargs="?", type=float, default=None)
-    args = parser.parse_args()
-    with Dvi(args.filename, args.dpi) as dvi:
+    import sys
+    fname = sys.argv[1]
+    try:
+        dpi = float(sys.argv[2])
+    except IndexError:
+        dpi = None
+    with Dvi(fname, dpi) as dvi:
         fontmap = PsfontsMap(find_tex_file('pdftex.map'))
         for page in dvi:
             print('=== new page ===')
-            for font, group in itertools.groupby(
-                    page.text, lambda text: text.font):
-                print('font', font.texname, 'scaled', font._scale / 2 ** 20)
-                for text in group:
-                    print(text.x, text.y, text.glyph,
-                          chr(text.glyph) if chr(text.glyph).isprintable()
-                          else ".",
-                          text.width)
+            fPrev = None
+            for x, y, f, c, w in page.text:
+                if f != fPrev:
+                    print('font', f.texname, 'scaled', f._scale/pow(2.0, 20))
+                    fPrev = f
+                print(x, y, c, 32 <= c < 128 and chr(c) or '.', w)
             for x, y, w, h in page.boxes:
                 print(x, y, 'BOX', w, h)

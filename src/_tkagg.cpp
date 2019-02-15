@@ -15,14 +15,8 @@
 
 #include <agg_basics.h> // agg:int8u
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
 // Include our own excerpts from the Tcl / Tk headers
 #include "_tkmini.h"
-
-#include "py_converters.h"
 
 #if defined(_MSC_VER)
 #  define IMG_FORMAT "%d %d %Iu"
@@ -81,7 +75,7 @@ static int PyAggImagePhoto(ClientData clientdata, Tcl_Interp *interp, int
     }
     /* get buffer from str which is "height width ptr" */
     if (sscanf(argv[2], IMG_FORMAT, &hdata, &wdata, &pdata) != 3) {
-        TCL_APPEND_RESULT(interp,
+        TCL_APPEND_RESULT(interp, 
                           "error reading data, expected height width ptr",
                           (char *)NULL);
         return TCL_ERROR;
@@ -115,10 +109,8 @@ static int PyAggImagePhoto(ClientData clientdata, Tcl_Interp *interp, int
         destheight = (int)(y2 - y1);
         deststride = 4 * destwidth;
 
-        try {
-            destbuffer = new agg::int8u[deststride * destheight];
-        }
-        catch (const std::bad_alloc &) {
+        destbuffer = new agg::int8u[deststride * destheight];
+        if (destbuffer == NULL) {
             TCL_APPEND_RESULT(interp, "could not allocate memory", (char *)NULL);
             return TCL_ERROR;
         }
@@ -211,85 +203,14 @@ static PyObject *_tkinit(PyObject *self, PyObject *args)
     return Py_None;
 }
 
-static PyObject *mpl_tk_blit(PyObject *self, PyObject *args)
-{
-    Tcl_Interp *interp;
-    char const *photo_name;
-    int height, width;
-    unsigned char *data_ptr;
-    int o0, o1, o2, o3;
-    int x1, x2, y1, y2;
-    Tk_PhotoHandle photo;
-    Tk_PhotoImageBlock block;
-    if (!PyArg_ParseTuple(args, "O&s(iiO&)(iiii)(iiii):blit",
-                          convert_voidptr, &interp, &photo_name,
-                          &height, &width, convert_voidptr, &data_ptr,
-                          &o0, &o1, &o2, &o3,
-                          &x1, &x2, &y1, &y2)) {
-        goto exit;
-    }
-    if (!(photo = TK_FIND_PHOTO(interp, photo_name))) {
-        PyErr_SetString(PyExc_ValueError, "Failed to extract Tk_PhotoHandle");
-        goto exit;
-    }
-    block.pixelPtr = data_ptr + 4 * ((height - y2) * width + x1);
-    block.width = x2 - x1;
-    block.height = y2 - y1;
-    block.pitch = 4 * width;
-    block.pixelSize = 4;
-    block.offset[0] = o0;
-    block.offset[1] = o1;
-    block.offset[2] = o2;
-    block.offset[3] = o3;
-    TK_PHOTO_PUT_BLOCK_NO_COMPOSITE(
-        photo, &block, x1, height - y2, x2 - x1, y2 - y1);
-exit:
-    if (PyErr_Occurred()) {
-        return NULL;
-    } else {
-        Py_RETURN_NONE;
-    }
-}
-
-#ifdef _WIN32
-static PyObject *
-Win32_GetForegroundWindow(PyObject *module, PyObject *args)
-{
-    HWND handle = GetForegroundWindow();
-    if (!PyArg_ParseTuple(args, ":GetForegroundWindow")) {
-        return NULL;
-    }
-    return PyLong_FromSize_t((size_t)handle);
-}
-
-static PyObject *
-Win32_SetForegroundWindow(PyObject *module, PyObject *args)
-{
-    HWND handle;
-    if (!PyArg_ParseTuple(args, "n:SetForegroundWindow", &handle)) {
-        return NULL;
-    }
-    if (!SetForegroundWindow(handle)) {
-        return PyErr_Format(PyExc_RuntimeError, "Error setting window");
-    }
-    Py_INCREF(Py_None);
-    return Py_None;
-}
-#endif
-
 static PyMethodDef functions[] = {
     /* Tkinter interface stuff */
-    { "tkinit", (PyCFunction)_tkinit, METH_VARARGS },
-    { "blit", (PyCFunction)mpl_tk_blit, METH_VARARGS },
-#ifdef _WIN32
-    { "Win32_GetForegroundWindow", (PyCFunction)Win32_GetForegroundWindow, METH_VARARGS },
-    { "Win32_SetForegroundWindow", (PyCFunction)Win32_SetForegroundWindow, METH_VARARGS },
-#endif
+    { "tkinit", (PyCFunction)_tkinit, 1 },
     { NULL, NULL } /* sentinel */
 };
 
 // Functions to fill global TCL / Tk function pointers by dynamic loading
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 
 /*
  * On Windows, we can't load the tkinter module to get the TCL or Tk symbols,
@@ -298,6 +219,7 @@ static PyMethodDef functions[] = {
  * Python, we scan all modules in the running process for the TCL and Tk
  * function names.
  */
+#include <windows.h>
 #define PSAPI_VERSION 1
 #include <psapi.h>
 // Must be linked with 'psapi' library
@@ -328,7 +250,8 @@ int get_tcl(HMODULE hMod)
     if (TCL_CREATE_COMMAND == NULL) {  // Maybe not TCL module
         return 0;
     }
-    TCL_APPEND_RESULT = (Tcl_AppendResult_t) _dfunc(hMod, "Tcl_AppendResult");
+    TCL_APPEND_RESULT = (Tcl_AppendResult_t) _dfunc(hMod,
+            "Tcl_AppendResult");
     return (TCL_APPEND_RESULT == NULL) ? -1 : 1;
 }
 
@@ -342,20 +265,20 @@ int get_tk(HMODULE hMod)
     if (TK_MAIN_WINDOW == NULL) {  // Maybe not Tk module
         return 0;
     }
-    return  // -1 if any remaining symbols are NULL
+    return ( // -1 if any remaining symbols are NULL
         ((TK_FIND_PHOTO = (Tk_FindPhoto_t)
           _dfunc(hMod, "Tk_FindPhoto")) == NULL) ||
         ((TK_PHOTO_PUT_BLOCK_NO_COMPOSITE = (Tk_PhotoPutBlock_NoComposite_t)
           _dfunc(hMod, "Tk_PhotoPutBlock_NoComposite")) == NULL) ||
         ((TK_PHOTO_BLANK = (Tk_PhotoBlank_t)
-          _dfunc(hMod, "Tk_PhotoBlank")) == NULL)
+          _dfunc(hMod, "Tk_PhotoBlank")) == NULL))
         ? -1 : 1;
 }
 
-void load_tkinter_funcs(void)
+int load_tkinter_funcs(void)
 {
     // Load TCL and Tk functions by searching all modules in current process.
-    // Sets an error on failure.
+    // Return 0 for success, non-zero for failure.
 
     HMODULE hMods[1024];
     HANDLE hProcess;
@@ -373,17 +296,17 @@ void load_tkinter_funcs(void)
             if (!found_tcl) {
                 found_tcl = get_tcl(hMods[i]);
                 if (found_tcl == -1) {
-                    return;
+                    return 1;
                 }
             }
             if (!found_tk) {
                 found_tk = get_tk(hMods[i]);
                 if (found_tk == -1) {
-                    return;
+                    return 1;
                 }
             }
             if (found_tcl && found_tk) {
-                return;
+                return 0;
             }
         }
     }
@@ -393,7 +316,7 @@ void load_tkinter_funcs(void)
     } else {
         PyErr_SetString(PyExc_RuntimeError, "Could not find Tk routines");
     }
-    return;
+    return 1;
 }
 
 #else  // not Windows
@@ -403,6 +326,16 @@ void load_tkinter_funcs(void)
  * tkinter uses these symbols, and the symbols are therefore visible in the
  * tkinter dynamic library (module).
  */
+// From module __file__ attribute to char *string for dlopen.
+char *fname2char(PyObject *fname)
+{
+    PyObject* bytes;
+    bytes = PyUnicode_EncodeFSDefault(fname);
+    if (bytes == NULL) {
+        return NULL;
+    }
+    return PyBytes_AsString(bytes);
+}
 
 #include <dlfcn.h>
 
@@ -417,7 +350,8 @@ void *_dfunc(void *lib_handle, const char *func_name)
     dlerror();
     func = dlsym(lib_handle, func_name);
     if (func == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, dlerror());
+        const char *error = dlerror();
+        PyErr_SetString(PyExc_RuntimeError, error);
     }
     return func;
 }
@@ -426,7 +360,7 @@ int _func_loader(void *lib)
 {
     // Fill global function pointers from dynamic lib.
     // Return 1 if any pointer is NULL, 0 otherwise.
-    return
+    return (
          ((TCL_CREATE_COMMAND = (Tcl_CreateCommand_t)
            _dfunc(lib, "Tcl_CreateCommand")) == NULL) ||
          ((TCL_APPEND_RESULT = (Tcl_AppendResult_t)
@@ -438,59 +372,86 @@ int _func_loader(void *lib)
          ((TK_PHOTO_PUT_BLOCK_NO_COMPOSITE = (Tk_PhotoPutBlock_NoComposite_t)
            _dfunc(lib, "Tk_PhotoPutBlock_NoComposite")) == NULL) ||
          ((TK_PHOTO_BLANK = (Tk_PhotoBlank_t)
-           _dfunc(lib, "Tk_PhotoBlank")) == NULL);
+           _dfunc(lib, "Tk_PhotoBlank")) == NULL));
 }
 
-void load_tkinter_funcs(void)
+int load_tkinter_funcs(void)
 {
     // Load tkinter global funcs from tkinter compiled module.
-    // Sets an error on failure.
+    // Return 0 for success, non-zero for failure.
+    int ret = -1;
     void *main_program, *tkinter_lib;
-    PyObject *module = NULL, *py_path = NULL, *py_path_b = NULL;
-    char *path;
+    char *tkinter_libname;
+    PyObject *pModule = NULL, *pSubmodule = NULL, *pString = NULL;
 
-    // Try loading from the main program namespace first.
+    // Try loading from the main program namespace first
     main_program = dlopen(NULL, RTLD_LAZY);
     if (_func_loader(main_program) == 0) {
-        goto exit;
+        return 0;
     }
     // Clear exception triggered when we didn't find symbols above.
     PyErr_Clear();
 
-    // Handle PyPy first, as that import will correctly fail on CPython.
-    module = PyImport_ImportModule("_tkinter.tklib_cffi");   // PyPy
-    if (!module) {
-        PyErr_Clear();
-        module = PyImport_ImportModule("_tkinter");  // CPython
-    }
-    if (!(module &&
-          (py_path = PyObject_GetAttrString(module, "__file__")) &&
-          (py_path_b = PyUnicode_EncodeFSDefault(py_path)) &&
-          (path = PyBytes_AsString(py_path_b)))) {
+    // Now try finding the tkinter compiled module
+    pModule = PyImport_ImportModule("tkinter");
+    if (pModule == NULL) {
         goto exit;
     }
-    tkinter_lib = dlopen(path, RTLD_LAZY);
-    if (!tkinter_lib) {
-        PyErr_SetString(PyExc_RuntimeError, dlerror());
+    pSubmodule = PyObject_GetAttrString(pModule, "_tkinter");
+    if (pSubmodule == NULL) {
         goto exit;
     }
-    _func_loader(tkinter_lib);
-    // dlclose is safe because tkinter has been imported.
+    pString = PyObject_GetAttrString(pSubmodule, "__file__");
+    if (pString == NULL) {
+        goto exit;
+    }
+    tkinter_libname = fname2char(pString);
+    if (tkinter_libname == NULL) {
+        goto exit;
+    }
+    tkinter_lib = dlopen(tkinter_libname, RTLD_LAZY);
+    if (tkinter_lib == NULL) {
+        /* Perhaps it is a cffi module, like in PyPy? */
+        pString = PyObject_GetAttrString(pSubmodule, "tklib_cffi");
+        if (pString == NULL) {
+            goto fail;
+        }
+        pString = PyObject_GetAttrString(pString, "__file__");
+        if (pString == NULL) {
+            goto fail;
+        }
+        tkinter_libname = fname2char(pString);
+        if (tkinter_libname == NULL) {
+            goto fail;
+        }
+        tkinter_lib = dlopen(tkinter_libname, RTLD_LAZY);
+    }
+    if (tkinter_lib == NULL) {
+        goto fail;
+    }
+    ret = _func_loader(tkinter_lib);
+    // dlclose probably safe because tkinter has been imported.
     dlclose(tkinter_lib);
     goto exit;
+fail:
+    PyErr_SetString(PyExc_RuntimeError,
+            "Cannot dlopen tkinter module file");
 exit:
-    Py_XDECREF(module);
-    Py_XDECREF(py_path);
-    Py_XDECREF(py_path_b);
+    Py_XDECREF(pModule);
+    Py_XDECREF(pSubmodule);
+    Py_XDECREF(pString);
+    return ret;
 }
 #endif // end not Windows
 
-static PyModuleDef _tkagg_module = {
-    PyModuleDef_HEAD_INIT, "_tkagg", "", -1, functions, NULL, NULL, NULL, NULL
-};
+static PyModuleDef _tkagg_module = { PyModuleDef_HEAD_INIT, "_tkagg", "",   -1,  functions,
+                                     NULL,                  NULL,     NULL, NULL };
 
 PyMODINIT_FUNC PyInit__tkagg(void)
 {
-    load_tkinter_funcs();
-    return PyErr_Occurred() ? NULL : PyModule_Create(&_tkagg_module);
+    PyObject *m;
+
+    m = PyModule_Create(&_tkagg_module);
+
+    return (load_tkinter_funcs() == 0) ? m : NULL;
 }

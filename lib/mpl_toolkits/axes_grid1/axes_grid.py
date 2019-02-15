@@ -1,12 +1,16 @@
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
+import six
+
 from numbers import Number
 
 import matplotlib.axes as maxes
 import matplotlib.ticker as ticker
 from matplotlib.gridspec import SubplotSpec
 
-from .axes_divider import Size, SubplotDivider, Divider
+from .axes_divider import Size, SubplotDivider, LocatableAxes, Divider
 from .colorbar import Colorbar
-from .mpl_axes import Axes
 
 
 def _extend_axes_pad(value):
@@ -30,7 +34,8 @@ def _tick_only(ax, bottom_on, left_on):
 
 class CbarAxesBase(object):
 
-    def colorbar(self, mappable, *, locator=None, **kwargs):
+    def colorbar(self, mappable, **kwargs):
+        locator = kwargs.pop("locator", None)
 
         if locator is None:
             if "ticks" not in kwargs:
@@ -42,6 +47,7 @@ class CbarAxesBase(object):
             else:
                 kwargs["ticks"] = locator
 
+        self._hold = True
         if self.orientation in ["top", "bottom"]:
             orientation = "horizontal"
         else:
@@ -101,12 +107,16 @@ class CbarAxesBase(object):
         #axis.label.set_visible(b)
 
 
-class CbarAxes(CbarAxesBase, Axes):
-    def __init__(self, *args, orientation, **kwargs):
+class CbarAxes(CbarAxesBase, LocatableAxes):
+    def __init__(self, *kl, **kwargs):
+        orientation = kwargs.pop("orientation", None)
+        if orientation is None:
+            raise ValueError("orientation must be specified")
         self.orientation = orientation
         self._default_label_on = True
         self.locator = None
-        super().__init__(*args, **kwargs)
+
+        super().__init__(*kl, **kwargs)
 
     def cla(self):
         super().cla()
@@ -123,7 +133,7 @@ class Grid(object):
     be easily done in matplotlib. AxesGrid is used in such case.
     """
 
-    _defaultAxesClass = Axes
+    _defaultLocatableAxesClass = LocatableAxes
 
     def __init__(self, fig,
                  rect,
@@ -140,31 +150,37 @@ class Grid(object):
                  axes_class=None,
                  ):
         """
-        Parameters
-        ----------
-        fig : Figure
-            The parent figure.
-        rect : (float, float, float, float) or int
-            The axes position, as a ``(left, bottom, width, height)`` tuple or
-            as a three-digit subplot position code (e.g., "121").
-        direction : {"row", "column"}, defaults to "row"
-        axes_pad : float or (float, float), defaults to 0.02
-            Padding or (horizontal padding, vertical padding) between axes, in
-            inches.
-        add_all : bool, defaults to True
-        share_all : bool, defaults to False
-        share_x : bool, defaults to True
-        share_y : bool, defaults to True
-        label_mode : {"L", "1", "all"}, defaults to "L"
-        axes_class : a type that is a subclass of `matplotlib.axes.Axes`, \
-defaults to None
+        Build an :class:`Grid` instance with a grid nrows*ncols
+        :class:`~matplotlib.axes.Axes` in
+        :class:`~matplotlib.figure.Figure` *fig* with
+        *rect=[left, bottom, width, height]* (in
+        :class:`~matplotlib.figure.Figure` coordinates) or
+        the subplot position code (e.g., "121").
+
+        Optional keyword arguments:
+
+          ================  ========  =========================================
+          Keyword           Default   Description
+          ================  ========  =========================================
+          direction         "row"     [ "row" | "column" ]
+          axes_pad          0.02      float| pad between axes given in inches
+                                      or tuple-like of floats,
+                                      (horizontal padding, vertical padding)
+          add_all           True      bool
+          share_all         False     bool
+          share_x           True      bool
+          share_y           True      bool
+          label_mode        "L"       [ "L" | "1" | "all" ]
+          axes_class        None      a type object which must be a subclass
+                                      of :class:`~matplotlib.axes.Axes`
+          ================  ========  =========================================
         """
         self._nrows, self._ncols = nrows_ncols
 
         if ngrids is None:
             ngrids = self._nrows * self._ncols
         else:
-            if not 0 < ngrids <= self._nrows * self._ncols:
+            if (ngrids > self._nrows * self._ncols) or (ngrids <= 0):
                 raise Exception("")
 
         self.ngrids = ngrids
@@ -177,12 +193,12 @@ defaults to None
         self._direction = direction
 
         if axes_class is None:
-            axes_class = self._defaultAxesClass
+            axes_class = self._defaultLocatableAxesClass
             axes_class_args = {}
         else:
-            if (isinstance(axes_class, type)
-                    and issubclass(axes_class,
-                                   self._defaultAxesClass.Axes)):
+            if (type(axes_class)) == type and \
+                   issubclass(axes_class,
+                              self._defaultLocatableAxesClass.Axes):
                 axes_class_args = {}
             else:
                 axes_class, axes_class_args = axes_class
@@ -431,30 +447,38 @@ class ImageGrid(Grid):
                  axes_class=None,
                  ):
         """
-        Parameters
-        ----------
-        fig : Figure
-            The parent figure.
-        rect : (float, float, float, float) or int
-            The axes position, as a ``(left, bottom, width, height)`` tuple or
-            as a three-digit subplot position code (e.g., "121").
-        direction : {"row", "column"}, defaults to "row"
-        axes_pad : float or (float, float), defaults to 0.02
-            Padding or (horizontal padding, vertical padding) between axes, in
-            inches.
-        add_all : bool, defaults to True
-        share_all : bool, defaults to False
-        aspect : bool, defaults to True
-        label_mode : {"L", "1", "all"}, defaults to "L"
-        cbar_mode : {"each", "single", "edge", None }, defaults to None
-        cbar_location : {"left", "right", "bottom", "top"}, defaults to "right"
-        cbar_pad : float, defaults to None
-        cbar_size : size specification (see `.Size.from_any`), defaults to "5%"
-        cbar_set_cax : bool, defaults to True
-            If True, each axes in the grid has a *cax* attribute that is bound
-            to associated *cbar_axes*.
-        axes_class : a type that is a subclass of `matplotlib.axes.Axes`, \
-defaults to None
+        Build an :class:`ImageGrid` instance with a grid nrows*ncols
+        :class:`~matplotlib.axes.Axes` in
+        :class:`~matplotlib.figure.Figure` *fig* with
+        *rect=[left, bottom, width, height]* (in
+        :class:`~matplotlib.figure.Figure` coordinates) or
+        the subplot position code (e.g., "121").
+
+        Optional keyword arguments:
+
+          ================  ========  =========================================
+          Keyword           Default   Description
+          ================  ========  =========================================
+          direction         "row"     [ "row" | "column" ]
+          axes_pad          0.02      float| pad between axes given in inches
+                                      or tuple-like of floats,
+                                      (horizontal padding, vertical padding)
+          add_all           True      bool
+          share_all         False     bool
+          aspect            True      bool
+          label_mode        "L"       [ "L" | "1" | "all" ]
+          cbar_mode         None      [ "each" | "single" | "edge" ]
+          cbar_location     "right"   [ "left" | "right" | "bottom" | "top" ]
+          cbar_pad          None
+          cbar_size         "5%"
+          cbar_set_cax      True      bool
+          axes_class        None      a type object which must be a subclass
+                                      of axes_grid's subclass of
+                                      :class:`~matplotlib.axes.Axes`
+          ================  ========  =========================================
+
+        *cbar_set_cax* : if True, each axes in the grid has a cax
+          attribute that is bind to associated cbar_axes.
         """
         self._nrows, self._ncols = nrows_ncols
 
@@ -490,7 +514,7 @@ defaults to None
         self._direction = direction
 
         if axes_class is None:
-            axes_class = self._defaultAxesClass
+            axes_class = self._defaultLocatableAxesClass
             axes_class_args = {}
         else:
             if isinstance(axes_class, maxes.Axes):
@@ -695,7 +719,7 @@ defaults to None
                         (self._colorbar_location == 'right'
                          and col == self._ncols-1)):
                     locator = self._divider.new_locator(
-                        nx=h_cb_pos[0], ny=v_ax_pos[self._nrows - 1 - row])
+                        nx=h_cb_pos[0], ny=v_ax_pos[self._nrows -1 - row])
                     self.cbar_axes[row].set_axes_locator(locator)
                 elif ((self._colorbar_location == 'bottom' and
                        row == self._nrows - 1) or
@@ -745,3 +769,4 @@ defaults to None
 
 
 AxesGrid = ImageGrid
+
